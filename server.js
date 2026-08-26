@@ -10,30 +10,63 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 3000;
 
-const SHOP = process.env.SHOPIFY_SHOP;
+const SHOP_RAW = process.env.SHOPIFY_SHOP;
 const CLIENT_ID = process.env.SHOPIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET;
 
 const API_VERSION =
   process.env.SHOPIFY_API_VERSION || "2026-07";
 
-const DEFAULT_CURRENCY =
+const CURRENCY =
   process.env.SHOPIFY_CURRENCY || "PYG";
+
+
+// =====================================================
+// SHOPIFY SHOP
+// Acepta:
+// import-store-9250
+// o
+// import-store-9250.myshopify.com
+// =====================================================
+
+const SHOP = String(SHOP_RAW || "")
+  .replace(/^https?:\/\//, "")
+  .replace(/\/+$/, "")
+  .replace(/\.myshopify\.com$/i, "");
+
+
+// =====================================================
+// VARIANTES DE CUBRE CANAS
+// =====================================================
+
+const COLOR_VARIANTS = {
+
+  negro: "gid://shopify/ProductVariant/55924530151729",
+
+  rojo: "gid://shopify/ProductVariant/55924530184497",
+
+  cafe: "gid://shopify/ProductVariant/55924530217265"
+
+};
+
+
+// =====================================================
+// TOKEN DE SHOPIFY
+// =====================================================
 
 let shopifyToken = null;
 let shopifyTokenExpiresAt = 0;
 
-
-/* =====================================================
-   OBTENER TOKEN DE SHOPIFY AUTOMÁTICAMENTE
-===================================================== */
-
 async function getShopifyAccessToken() {
 
-  if (!SHOP || !CLIENT_ID || !CLIENT_SECRET) {
+  if (
+    !SHOP ||
+    !CLIENT_ID ||
+    !CLIENT_SECRET
+  ) {
 
     throw new Error(
-      "Faltan SHOPIFY_SHOP, SHOPIFY_CLIENT_ID o SHOPIFY_CLIENT_SECRET en Render."
+      "Faltan las credenciales de Shopify en Render."
     );
 
   }
@@ -49,8 +82,9 @@ async function getShopifyAccessToken() {
 
 
   const response = await fetch(
-    `https://${SHOP}/admin/oauth/access_token`,
+    `https://${SHOP}.myshopify.com/admin/oauth/access_token`,
     {
+
       method: "POST",
 
       headers: {
@@ -85,7 +119,7 @@ async function getShopifyAccessToken() {
   ) {
 
     console.error(
-      "Shopify authentication error:",
+      "Error autenticando Shopify:",
       data
     );
 
@@ -101,7 +135,7 @@ async function getShopifyAccessToken() {
 
 
   const expiresIn =
-    Number(data.expires_in) || 86400;
+    Number(data.expires_in) || 86399;
 
 
   shopifyTokenExpiresAt =
@@ -112,14 +146,19 @@ async function getShopifyAccessToken() {
     ) * 1000;
 
 
+  console.log(
+    "Token de Shopify obtenido correctamente."
+  );
+
+
   return shopifyToken;
 
 }
 
 
-/* =====================================================
-   FUNCIÓN PARA HABLAR CON SHOPIFY
-===================================================== */
+// =====================================================
+// GRAPHQL SHOPIFY
+// =====================================================
 
 async function shopifyGraphQL(
   query,
@@ -132,8 +171,9 @@ async function shopifyGraphQL(
 
   const response =
     await fetch(
-      `https://${SHOP}/admin/api/${API_VERSION}/graphql.json`,
+      `https://${SHOP}.myshopify.com/admin/api/${API_VERSION}/graphql.json`,
       {
+
         method: "POST",
 
         headers: {
@@ -200,69 +240,125 @@ async function shopifyGraphQL(
 }
 
 
-/* =====================================================
-   PACKS
-===================================================== */
+// =====================================================
+// PACKS
+//
+// Los precios se configuran en Render:
+//
+// PACKAGE_1_PRICE
+// PACKAGE_2_PRICE
+// PACKAGE_3_PRICE
+//
+// Los IDs de variante YA están en este código.
+// =====================================================
 
 function packagesFromEnv() {
 
-  return [1, 2, 3].map(
-    n => ({
+  return [
 
-      id:
-        String(n),
+    {
+      id: "1",
 
       label:
-        process.env[
-          `PACKAGE_${n}_LABEL`
-        ] ||
-        `${n} unidad${
-          n > 1 ? "es" : ""
-        }`,
+        process.env.PACKAGE_1_LABEL ||
+        "1 unidad",
 
       price:
         Number(
-          process.env[
-            `PACKAGE_${n}_PRICE`
-          ] || 0
-        ),
+          process.env.PACKAGE_1_PRICE || 0
+        )
+    },
 
-      variantId:
-        process.env[
-          `PACKAGE_${n}_VARIANT_ID`
-        ] || ""
+    {
+      id: "2",
 
-    })
-  );
+      label:
+        process.env.PACKAGE_2_LABEL ||
+        "2 unidades",
+
+      price:
+        Number(
+          process.env.PACKAGE_2_PRICE || 0
+        )
+    },
+
+    {
+      id: "3",
+
+      label:
+        process.env.PACKAGE_3_LABEL ||
+        "3 unidades",
+
+      price:
+        Number(
+          process.env.PACKAGE_3_PRICE || 0
+        )
+    }
+
+  ];
 
 }
 
 
-/* =====================================================
-   CONFIGURACIÓN DEL FORMULARIO
-===================================================== */
+// =====================================================
+// NORMALIZAR COLOR
+// =====================================================
+
+function normalizeColor(value) {
+
+  const color =
+    String(value || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+
+  if (
+    color === "negro"
+  ) {
+
+    return "negro";
+
+  }
+
+
+  if (
+    color === "rojo"
+  ) {
+
+    return "rojo";
+
+  }
+
+
+  if (
+    color === "cafe" ||
+    color === "café" ||
+    color === "marron" ||
+    color === "marrón"
+  ) {
+
+    return "cafe";
+
+  }
+
+
+  return null;
+
+}
+
+
+// =====================================================
+// CONFIGURACIÓN PARA EL FORMULARIO
+// =====================================================
 
 app.get(
   "/api/config",
   (_req, res) => {
 
     const packages =
-      packagesFromEnv()
-        .map(
-          ({
-            id,
-            label,
-            price
-          }) => ({
-
-            id,
-
-            label,
-
-            price
-
-          })
-        );
+      packagesFromEnv();
 
 
     res.json({
@@ -272,13 +368,32 @@ app.get(
         "Cubre Canas",
 
       currency:
-        DEFAULT_CURRENCY,
+        CURRENCY,
 
       delivery:
         "Delivery gratis",
 
       payment:
         "Pago contra entrega",
+
+      colors: [
+
+        {
+          id: "negro",
+          label: "Negro"
+        },
+
+        {
+          id: "rojo",
+          label: "Rojo"
+        },
+
+        {
+          id: "cafe",
+          label: "Café"
+        }
+
+      ],
 
       packages
 
@@ -288,9 +403,9 @@ app.get(
 );
 
 
-/* =====================================================
-   LIMPIAR DATOS
-===================================================== */
+// =====================================================
+// LIMPIAR DATOS
+// =====================================================
 
 function clean(
   value,
@@ -306,26 +421,20 @@ function clean(
 }
 
 
-/* =====================================================
-   VALIDAR PEDIDO
-===================================================== */
+// =====================================================
+// VALIDAR PEDIDO
+// =====================================================
 
 function validateOrder(body) {
 
   const required = [
 
     "firstName",
-
     "lastName",
-
     "phone",
-
     "address",
-
     "city",
-
     "packageId",
-
     "color"
 
   ];
@@ -349,9 +458,7 @@ function validateOrder(body) {
   if (
     !["1", "2", "3"]
       .includes(
-        String(
-          body.packageId
-        )
+        String(body.packageId)
       )
   ) {
 
@@ -361,13 +468,10 @@ function validateOrder(body) {
 
 
   if (
-    !clean(
-      body.color,
-      60
-    )
+    !normalizeColor(body.color)
   ) {
 
-    return "Selecciona un color.";
+    return "Selecciona un color válido.";
 
   }
 
@@ -377,9 +481,9 @@ function validateOrder(body) {
 }
 
 
-/* =====================================================
-   MUTACIÓN PARA CREAR PEDIDO
-===================================================== */
+// =====================================================
+// ORDER CREATE
+// =====================================================
 
 const ORDER_CREATE = `
 
@@ -428,9 +532,9 @@ mutation orderCreate(
 `;
 
 
-/* =====================================================
-   CREAR PEDIDO
-===================================================== */
+// =====================================================
+// CREAR PEDIDO
+// =====================================================
 
 app.post(
   "/api/orders",
@@ -438,13 +542,17 @@ app.post(
 
     try {
 
-      const error =
+      // -------------------------------------------------
+      // VALIDACIÓN
+      // -------------------------------------------------
+
+      const validationError =
         validateOrder(
           req.body
         );
 
 
-      if (error) {
+      if (validationError) {
 
         return res
           .status(400)
@@ -452,67 +560,20 @@ app.post(
 
             ok: false,
 
-            message: error
+            message:
+              validationError
 
           });
 
       }
 
+
+      // -------------------------------------------------
+      // DATOS DEL CLIENTE
+      // -------------------------------------------------
 
       const body =
         req.body;
-
-
-      const packages =
-        packagesFromEnv();
-
-
-      const selected =
-        packages.find(
-          packageItem =>
-            packageItem.id ===
-            String(
-              body.packageId
-            )
-        );
-
-
-      if (
-        !selected ||
-        !selected.variantId
-      ) {
-
-        return res
-          .status(500)
-          .json({
-
-            ok: false,
-
-            message:
-              "Falta configurar la variante de Shopify para esta cantidad."
-
-          });
-
-      }
-
-
-      if (
-        !selected.price ||
-        selected.price <= 0
-      ) {
-
-        return res
-          .status(500)
-          .json({
-
-            ok: false,
-
-            message:
-              "Falta configurar el precio de este pack en Render."
-
-          });
-
-      }
 
 
       const firstName =
@@ -564,36 +625,114 @@ app.post(
         );
 
 
+      // -------------------------------------------------
+      // COLOR
+      // -------------------------------------------------
+
       const color =
-        clean(
-          body.color,
-          60
+        normalizeColor(
+          body.color
         );
 
 
-      const quantity =
-        Number(
+      const variantId =
+        COLOR_VARIANTS[color];
+
+
+      if (!variantId) {
+
+        return res
+          .status(400)
+          .json({
+
+            ok: false,
+
+            message:
+              "La variante del color seleccionado no existe."
+
+          });
+
+      }
+
+
+      // -------------------------------------------------
+      // PACK
+      // -------------------------------------------------
+
+      const packages =
+        packagesFromEnv();
+
+
+      const packageId =
+        String(
           body.packageId
         );
 
 
-      /*
-        Precio total del pack dividido
-        entre las unidades.
+      const selectedPackage =
+        packages.find(
+          item =>
+            item.id ===
+            packageId
+        );
 
-        Ejemplo:
 
-        Pack 2 =
-        321.100 Gs
+      if (!selectedPackage) {
 
-        Pack 3 =
-        456.300 Gs
-      */
+        return res
+          .status(400)
+          .json({
+
+            ok: false,
+
+            message:
+              "El pack seleccionado no existe."
+
+          });
+
+      }
+
+
+      const quantity =
+        Number(
+          packageId
+        );
+
+
+      if (
+        !selectedPackage.price ||
+        selectedPackage.price <= 0
+      ) {
+
+        return res
+          .status(500)
+          .json({
+
+            ok: false,
+
+            message:
+              "Falta configurar el precio del pack en Render."
+
+          });
+
+      }
+
+
+      // -------------------------------------------------
+      // PRECIO
+      //
+      // Shopify recibirá el precio TOTAL del pack
+      // repartido entre las unidades.
+      // -------------------------------------------------
 
       const unitPrice =
-        selected.price /
+        selectedPackage.price /
         quantity;
 
+
+      // -------------------------------------------------
+      // PEDIDO
+      // -------------------------------------------------
 
       const order = {
 
@@ -601,8 +740,7 @@ app.post(
 
           {
 
-            variantId:
-              selected.variantId,
+            variantId,
 
             quantity,
 
@@ -614,31 +752,35 @@ app.post(
                   unitPrice.toFixed(2),
 
                 currencyCode:
-                  DEFAULT_CURRENCY
+                  CURRENCY
 
               }
 
             },
 
-            properties: [
+            customAttributes: [
 
               {
 
-                name:
+                key:
                   "Color",
 
                 value:
-                  color
+                  color === "negro"
+                    ? "Negro"
+                    : color === "rojo"
+                      ? "Rojo"
+                      : "Café"
 
               },
 
               {
 
-                name:
+                key:
                   "Pack",
 
                 value:
-                  selected.label
+                  selectedPackage.label
 
               }
 
@@ -684,10 +826,7 @@ app.post(
         phone,
 
 
-        /*
-          Pago contra entrega.
-        */
-
+        // Pago contra entrega.
         financialStatus:
           "PENDING",
 
@@ -732,13 +871,27 @@ app.post(
 
         note: [
 
-          "PEDIDO CUBRE CANAS",
+          "PEDIDO DESDE FORMULARIO CUBRE CANAS",
 
-          `Color: ${color}`,
+          `Color: ${
+            color === "negro"
+              ? "Negro"
+              : color === "rojo"
+                ? "Rojo"
+                : "Café"
+          }`,
 
-          `Pack: ${selected.label}`,
+          `Pack: ${
+            selectedPackage.label
+          }`,
 
-          `Cantidad: ${quantity}`,
+          `Cantidad: ${
+            quantity
+          }`,
+
+          `Total: ${
+            selectedPackage.price
+          } Gs`,
 
           "Delivery: GRATIS",
 
@@ -757,6 +910,10 @@ app.post(
       };
 
 
+      // -------------------------------------------------
+      // CREAR EN SHOPIFY
+      // -------------------------------------------------
+
       const data =
         await shopifyGraphQL(
           ORDER_CREATE,
@@ -766,11 +923,11 @@ app.post(
         );
 
 
-      const payload =
+      const result =
         data?.orderCreate;
 
 
-      if (!payload) {
+      if (!result) {
 
         return res
           .status(502)
@@ -786,13 +943,17 @@ app.post(
       }
 
 
+      // -------------------------------------------------
+      // ERRORES DE SHOPIFY
+      // -------------------------------------------------
+
       if (
-        payload.userErrors?.length
+        result.userErrors?.length
       ) {
 
         console.error(
           "Shopify userErrors:",
-          payload.userErrors
+          result.userErrors
         );
 
 
@@ -803,7 +964,7 @@ app.post(
             ok: false,
 
             message:
-              payload.userErrors
+              result.userErrors
                 .map(
                   error =>
                     error.message
@@ -815,6 +976,16 @@ app.post(
       }
 
 
+      // -------------------------------------------------
+      // ÉXITO
+      // -------------------------------------------------
+
+      console.log(
+        "PEDIDO CREADO:",
+        result.order.name
+      );
+
+
       return res.json({
 
         ok: true,
@@ -822,16 +993,22 @@ app.post(
         order: {
 
           id:
-            payload.order.id,
+            result.order.id,
 
           name:
-            payload.order.name,
+            result.order.name,
 
           total:
-            payload.order
+            result.order
               .currentTotalPriceSet
               ?.shopMoney
-              ?.amount
+              ?.amount,
+
+          currency:
+            result.order
+              .currentTotalPriceSet
+              ?.shopMoney
+              ?.currencyCode
 
         }
 
@@ -864,12 +1041,12 @@ app.post(
 );
 
 
-/* =====================================================
-   MOSTRAR FORMULARIO
-===================================================== */
+// =====================================================
+// FRONTEND
+// =====================================================
 
 app.get(
-  "*",
+  /.*/,
   (_req, res) => {
 
     res.sendFile(
@@ -884,9 +1061,9 @@ app.get(
 );
 
 
-/* =====================================================
-   INICIAR SERVIDOR
-===================================================== */
+// =====================================================
+// INICIAR SERVIDOR
+// =====================================================
 
 app.listen(
   PORT,
