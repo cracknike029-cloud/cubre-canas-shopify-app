@@ -1,0 +1,17 @@
+{
+  "name": "cubre-canas-shopify-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Formulario COD para Cubre Canas que crea pedidos directamente en Shopify.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0"
+  }
+}
