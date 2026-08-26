@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cubre Canas — Pedido</title>
+  <style>
+    :root{font-family:Arial,Helvetica,sans-serif;color:#171717;background:#f6f6f6}
+    *{box-sizing:border-box}
+    body{margin:0;padding:24px}
+    .wrap{max-width:620px;margin:auto}
+    .card{background:#fff;border-radius:18px;padding:22px;box-shadow:0 6px 24px rgba(0,0,0,.08)}
+    h1{margin:0 0 6px;font-size:27px}
+    .sub{margin:0 0 20px;color:#666}
+    label{display:block;font-weight:700;margin:15px 0 7px}
+    input,select,textarea{width:100%;padding:13px;border:1px solid #ccc;border-radius:10px;font-size:16px}
+    textarea{min-height:80px;resize:vertical}
+    .packs,.colors{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+    .choice{border:1px solid #ccc;border-radius:12px;padding:12px;text-align:center;cursor:pointer}
+    .choice input{display:none}
+    .choice.active{border:2px solid #111;background:#f3f3f3}
+    .summary{margin-top:18px;padding:14px;border-radius:12px;background:#f4f4f4}
+    .summary div{display:flex;justify-content:space-between;margin:5px 0}
+    button{width:100%;margin-top:18px;padding:15px;border:0;border-radius:12px;background:#111;color:#fff;font-weight:800;font-size:17px;cursor:pointer}
+    button:disabled{opacity:.6;cursor:wait}
+    .ok,.err{display:none;margin-top:14px;padding:13px;border-radius:10px}
+    .ok{background:#e7f7e8;color:#145c1a}.err{background:#ffe9e9;color:#8b1111}
+    @media(max-width:460px){body{padding:12px}.packs,.colors{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1 id="title">Cubre Canas</h1>
+    <p class="sub">Completa tus datos para realizar tu pedido.</p>
+
+    <form id="orderForm">
+      <label>Nombre</label>
+      <input name="firstName" required autocomplete="given-name">
+
+      <label>Apellido</label>
+      <input name="lastName" required autocomplete="family-name">
+
+      <label>Teléfono</label>
+      <input name="phone" required inputmode="tel" autocomplete="tel">
+
+      <label>Correo electrónico <span style="font-weight:400">(opcional)</span></label>
+      <input name="email" type="email" autocomplete="email">
+
+      <label>Dirección</label>
+      <input name="address" required autocomplete="street-address">
+
+      <label>Ciudad</label>
+      <input name="city" required autocomplete="address-level2">
+
+      <label>Cantidad</label>
+      <div id="packages" class="packs"></div>
+
+      <label>Color</label>
+      <div class="colors">
+        <label class="choice"><input type="radio" name="color" value="Negro" required>Negro</label>
+        <label class="choice"><input type="radio" name="color" value="Castaño">Castaño</label>
+        <label class="choice"><input type="radio" name="color" value="Castaño oscuro">Castaño oscuro</label>
+      </div>
+
+      <label>Observaciones <span style="font-weight:400">(opcional)</span></label>
+      <textarea name="notes"></textarea>
+
+      <div class="summary">
+        <div><span>Delivery</span><strong>Gratis</strong></div>
+        <div><span>Pago</span><strong>Contra entrega</strong></div>
+        <div><span>Total</span><strong id="total">—</strong></div>
+      </div>
+
+      <button id="submitBtn" type="submit">COMPLETAR ORDEN</button>
+      <div id="ok" class="ok"></div>
+      <div id="err" class="err"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+(async () => {
+  const config = await fetch("/api/config").then(r => r.json());
+  document.getElementById("title").textContent = config.productName || "Cubre Canas";
+
+  const packagesEl = document.getElementById("packages");
+  const totalEl = document.getElementById("total");
+
+  const money = n => new Intl.NumberFormat("es-PY").format(Number(n || 0)) + " Gs";
+
+  config.packages.forEach((p, i) => {
+    const label = document.createElement("label");
+    label.className = "choice" + (i === 0 ? " active" : "");
+    label.innerHTML = `<input type="radio" name="packageId" value="${p.id}" ${i === 0 ? "checked" : ""} required><strong>${p.label}</strong><br><small>${money(p.price)}</small>`;
+    label.querySelector("input").addEventListener("change", () => {
+      document.querySelectorAll("#packages .choice").forEach(x => x.classList.remove("active"));
+      label.classList.add("active");
+      totalEl.textContent = money(p.price);
+    });
+    packagesEl.appendChild(label);
+  });
+
+  if (config.packages[0]) totalEl.textContent = money(config.packages[0].price);
+
+  document.querySelectorAll(".colors .choice").forEach(label => {
+    label.addEventListener("click", () => {
+      document.querySelectorAll(".colors .choice").forEach(x => x.classList.remove("active"));
+      label.classList.add("active");
+    });
+  });
+
+  const form = document.getElementById("orderForm");
+  const btn = document.getElementById("submitBtn");
+  const ok = document.getElementById("ok");
+  const err = document.getElementById("err");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    ok.style.display = "none";
+    err.style.display = "none";
+    btn.disabled = true;
+    btn.textContent = "PROCESANDO...";
+
+    const data = Object.fromEntries(new FormData(form).entries());
+
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        throw new Error(result.message || "No se pudo completar el pedido.");
+      }
+
+      ok.textContent = `¡Pedido recibido! Número de pedido: ${result.order.name || "confirmado"}.`;
+      ok.style.display = "block";
+      form.reset();
+      document.querySelectorAll(".choice").forEach(x => x.classList.remove("active"));
+      document.querySelector("#packages .choice")?.classList.add("active");
+    } catch (error) {
+      err.textContent = error.message;
+      err.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "COMPLETAR ORDEN";
+    }
+  });
+})();
+</script>
+</body>
+</html>
