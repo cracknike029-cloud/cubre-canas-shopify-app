@@ -9,44 +9,44 @@
     :root{
       font-family:Arial,Helvetica,sans-serif;
       color:#171717;
-      background:#f6f6f6
+      background:#f6f6f6;
     }
 
     *{
-      box-sizing:border-box
+      box-sizing:border-box;
     }
 
     body{
       margin:0;
-      padding:24px
+      padding:24px;
     }
 
     .wrap{
       max-width:620px;
-      margin:auto
+      margin:auto;
     }
 
     .card{
       background:#fff;
       border-radius:18px;
       padding:22px;
-      box-shadow:0 6px 24px rgba(0,0,0,.08)
+      box-shadow:0 6px 24px rgba(0,0,0,.08);
     }
 
     h1{
       margin:0 0 6px;
-      font-size:27px
+      font-size:27px;
     }
 
     .sub{
       margin:0 0 20px;
-      color:#666
+      color:#666;
     }
 
     label{
       display:block;
       font-weight:700;
-      margin:15px 0 7px
+      margin:15px 0 7px;
     }
 
     input,
@@ -56,19 +56,19 @@
       padding:13px;
       border:1px solid #ccc;
       border-radius:10px;
-      font-size:16px
+      font-size:16px;
     }
 
     textarea{
       min-height:80px;
-      resize:vertical
+      resize:vertical;
     }
 
     .packs,
     .colors{
       display:grid;
       grid-template-columns:repeat(3,1fr);
-      gap:9px
+      gap:9px;
     }
 
     .choice{
@@ -76,29 +76,47 @@
       border-radius:12px;
       padding:12px;
       text-align:center;
-      cursor:pointer
+      cursor:pointer;
+      transition:.15s ease;
+      user-select:none;
+      margin:0;
+    }
+
+    .choice:hover{
+      border-color:#777;
     }
 
     .choice input{
-      display:none
+      display:none;
     }
 
     .choice.active{
       border:2px solid #111;
-      background:#f3f3f3
+      background:#f3f3f3;
+    }
+
+    .choice strong{
+      display:inline-block;
+      font-size:16px;
+    }
+
+    .choice small{
+      display:inline-block;
+      margin-top:3px;
+      font-size:14px;
     }
 
     .summary{
       margin-top:18px;
       padding:14px;
       border-radius:12px;
-      background:#f4f4f4
+      background:#f4f4f4;
     }
 
     .summary div{
       display:flex;
       justify-content:space-between;
-      margin:5px 0
+      margin:5px 0;
     }
 
     button{
@@ -111,12 +129,12 @@
       color:#fff;
       font-weight:800;
       font-size:17px;
-      cursor:pointer
+      cursor:pointer;
     }
 
     button:disabled{
       opacity:.6;
-      cursor:wait
+      cursor:wait;
     }
 
     .ok,
@@ -124,27 +142,28 @@
       display:none;
       margin-top:14px;
       padding:13px;
-      border-radius:10px
+      border-radius:10px;
+      line-height:1.4;
     }
 
     .ok{
       background:#e7f7e8;
-      color:#145c1a
+      color:#145c1a;
     }
 
     .err{
       background:#ffe9e9;
-      color:#8b1111
+      color:#8b1111;
     }
 
     @media(max-width:460px){
       body{
-        padding:12px
+        padding:12px;
       }
 
       .packs,
       .colors{
-        grid-template-columns:1fr
+        grid-template-columns:1fr;
       }
     }
   </style>
@@ -165,38 +184,38 @@
     <form id="orderForm">
 
       <!-- NOMBRE -->
-      <label>Nombre</label>
+      <label for="firstName">Nombre</label>
 
       <input
+        id="firstName"
         name="firstName"
         required
         autocomplete="given-name"
       >
 
-
       <!-- APELLIDO -->
-      <label>Apellido</label>
+      <label for="lastName">Apellido</label>
 
       <input
+        id="lastName"
         name="lastName"
         required
         autocomplete="family-name"
       >
 
-
       <!-- TELÉFONO -->
-      <label>Teléfono</label>
+      <label for="phone">Teléfono</label>
 
       <input
+        id="phone"
         name="phone"
         required
         inputmode="tel"
         autocomplete="tel"
       >
 
-
       <!-- CORREO -->
-      <label>
+      <label for="email">
         Correo electrónico
         <span style="font-weight:400">
           (opcional)
@@ -204,40 +223,36 @@
       </label>
 
       <input
+        id="email"
         name="email"
         type="email"
         autocomplete="email"
       >
 
-
       <!-- DIRECCIÓN -->
-      <label>Dirección</label>
+      <label for="address">Dirección</label>
 
       <input
+        id="address"
         name="address"
         required
         autocomplete="street-address"
       >
 
-
       <!-- CIUDAD -->
-      <label>Ciudad</label>
+      <label for="city">Ciudad</label>
 
       <input
+        id="city"
         name="city"
         required
         autocomplete="address-level2"
       >
 
-
       <!-- CANTIDAD -->
       <label>Cantidad</label>
 
-      <div
-        id="packages"
-        class="packs"
-      ></div>
-
+      <div id="packages" class="packs"></div>
 
       <!-- COLOR -->
       <label>Color</label>
@@ -275,17 +290,18 @@
 
       </div>
 
-
       <!-- OBSERVACIONES -->
-      <label>
+      <label for="notes">
         Observaciones
         <span style="font-weight:400">
           (opcional)
         </span>
       </label>
 
-      <textarea name="notes"></textarea>
-
+      <textarea
+        id="notes"
+        name="notes"
+      ></textarea>
 
       <!-- RESUMEN -->
       <div class="summary">
@@ -302,11 +318,10 @@
 
         <div>
           <span>Total</span>
-          <strong id="total">—</strong>
+          <strong id="total">169.000 Gs</strong>
         </div>
 
       </div>
-
 
       <!-- BOTÓN -->
       <button
@@ -316,16 +331,17 @@
         COMPLETAR ORDEN
       </button>
 
-
       <!-- MENSAJES -->
       <div
         id="ok"
         class="ok"
+        role="status"
       ></div>
 
       <div
         id="err"
         class="err"
+        role="alert"
       ></div>
 
     </form>
@@ -336,27 +352,48 @@
 
 
 <script>
-
 (async () => {
 
-  /* =========================================
-     OBTENER CONFIGURACIÓN DEL SERVIDOR
-  ========================================= */
+  /* =====================================================
+     CONFIGURACIÓN DE RESPALDO
+     Si /api/config falla, estos datos siguen funcionando.
+  ===================================================== */
 
-  const configResponse =
-    await fetch("/api/config");
+  const FALLBACK_CONFIG = {
+    productName: "Cubre Canas",
 
-  const config =
-    await configResponse.json();
+    currency: "PYG",
+
+    delivery: "Delivery gratis",
+
+    payment: "Pago contra entrega",
+
+    packages: [
+      {
+        id: "1",
+        label: "1 unidad",
+        price: 169000
+      },
+      {
+        id: "2",
+        label: "2 unidades",
+        price: 321100
+      },
+      {
+        id: "3",
+        label: "3 unidades",
+        price: 456300
+      }
+    ]
+  };
 
 
-  /* =========================================
-     NOMBRE DEL PRODUCTO
-  ========================================= */
+  /* =====================================================
+     ELEMENTOS
+  ===================================================== */
 
-  document.getElementById("title").textContent =
-    config.productName || "Cubre Canas";
-
+  const titleEl =
+    document.getElementById("title");
 
   const packagesEl =
     document.getElementById("packages");
@@ -364,151 +401,11 @@
   const totalEl =
     document.getElementById("total");
 
-
-  /* =========================================
-     FORMATO DE DINERO
-  ========================================= */
-
-  const money = (n) => {
-
-    return new Intl.NumberFormat("es-PY")
-      .format(Number(n || 0))
-      + " Gs";
-
-  };
-
-
-  /* =========================================
-     CREAR OPCIONES DE CANTIDAD
-  ========================================= */
-
-  config.packages.forEach((p, i) => {
-
-    const label =
-      document.createElement("label");
-
-    label.className =
-      "choice" +
-      (i === 0 ? " active" : "");
-
-
-    label.innerHTML = `
-
-      <input
-        type="radio"
-        name="packageId"
-        value="${p.id}"
-        ${i === 0 ? "checked" : ""}
-        required
-      >
-
-      <strong>
-        ${p.label}
-      </strong>
-
-      <br>
-
-      <small>
-        ${money(p.price)}
-      </small>
-
-    `;
-
-
-    const input =
-      label.querySelector("input");
-
-
-    input.addEventListener(
-      "change",
-      () => {
-
-        document
-          .querySelectorAll(
-            "#packages .choice"
-          )
-          .forEach(
-            x =>
-              x.classList.remove("active")
-          );
-
-
-        label.classList.add("active");
-
-
-        totalEl.textContent =
-          money(p.price);
-
-      }
-    );
-
-
-    packagesEl.appendChild(label);
-
-  });
-
-
-  /* =========================================
-     TOTAL INICIAL
-  ========================================= */
-
-  if (config.packages[0]) {
-
-    totalEl.textContent =
-      money(
-        config.packages[0].price
-      );
-
-  }
-
-
-  /* =========================================
-     SELECCIÓN DE COLOR
-  ========================================= */
-
-  document
-    .querySelectorAll(
-      ".colors .choice"
-    )
-    .forEach(label => {
-
-      label.addEventListener(
-        "click",
-        () => {
-
-          document
-            .querySelectorAll(
-              ".colors .choice"
-            )
-            .forEach(
-              x =>
-                x.classList.remove(
-                  "active"
-                )
-            );
-
-
-          label.classList.add("active");
-
-        }
-      );
-
-    });
-
-
-  /* =========================================
-     FORMULARIO
-  ========================================= */
-
   const form =
-    document.getElementById(
-      "orderForm"
-    );
+    document.getElementById("orderForm");
 
   const btn =
-    document.getElementById(
-      "submitBtn"
-    );
+    document.getElementById("submitBtn");
 
   const ok =
     document.getElementById("ok");
@@ -517,42 +414,441 @@
     document.getElementById("err");
 
 
-  /* =========================================
-     ENVIAR PEDIDO
-  ========================================= */
+  /* =====================================================
+     FORMATO DE DINERO
+  ===================================================== */
+
+  const money = (value) => {
+
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+      return "0 Gs";
+    }
+
+    return (
+      new Intl.NumberFormat("es-PY").format(number)
+      + " Gs"
+    );
+  };
+
+
+  /* =====================================================
+     OBTENER CONFIGURACIÓN
+  ===================================================== */
+
+  let config = null;
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/config",
+        {
+          method:"GET",
+          headers:{
+            "Accept":"application/json"
+          },
+          cache:"no-store"
+        }
+      );
+
+    /*
+      IMPORTANTE:
+
+      Primero leemos como texto.
+      Así evitamos el error:
+
+      Unexpected token '<'
+
+      cuando el servidor devuelve HTML
+      en lugar de JSON.
+    */
+
+    const text =
+      await response.text();
+
+    let parsed = null;
+
+    try {
+      parsed = JSON.parse(text);
+    } catch (_) {
+      parsed = null;
+    }
+
+    if (
+      !response.ok ||
+      !parsed
+    ) {
+
+      console.warn(
+        "No se pudo obtener /api/config. Usando configuración de respaldo."
+      );
+
+      config = FALLBACK_CONFIG;
+
+    } else {
+
+      config = parsed;
+
+    }
+
+  } catch (error) {
+
+    console.warn(
+      "Error conectando con /api/config:",
+      error
+    );
+
+    config = FALLBACK_CONFIG;
+  }
+
+
+  /* =====================================================
+     VALIDAR CONFIGURACIÓN
+  ===================================================== */
+
+  if (
+    !config ||
+    !Array.isArray(config.packages) ||
+    config.packages.length === 0
+  ) {
+
+    config = FALLBACK_CONFIG;
+  }
+
+
+  /* =====================================================
+     NOMBRE DEL PRODUCTO
+  ===================================================== */
+
+  titleEl.textContent =
+    config.productName ||
+    "Cubre Canas";
+
+
+  /* =====================================================
+     LIMPIAR PAQUETES
+  ===================================================== */
+
+  packagesEl.innerHTML = "";
+
+
+  /* =====================================================
+     CREAR OPCIONES DE CANTIDAD
+  ===================================================== */
+
+  config.packages
+    .slice(0, 3)
+    .forEach((p, index) => {
+
+      const label =
+        document.createElement("label");
+
+      label.className =
+        "choice" +
+        (index === 0 ? " active" : "");
+
+      const input =
+        document.createElement("input");
+
+      input.type = "radio";
+      input.name = "packageId";
+      input.value = String(p.id);
+      input.required = true;
+
+      if (index === 0) {
+        input.checked = true;
+      }
+
+
+      const strong =
+        document.createElement("strong");
+
+      strong.textContent =
+        p.label ||
+        `${index + 1} unidad${index > 0 ? "es" : ""}`;
+
+
+      const br =
+        document.createElement("br");
+
+
+      const small =
+        document.createElement("small");
+
+      small.textContent =
+        money(p.price);
+
+
+      label.appendChild(input);
+      label.appendChild(strong);
+      label.appendChild(br);
+      label.appendChild(small);
+
+      packagesEl.appendChild(label);
+
+
+      /* ================================================
+         CAMBIO DE CANTIDAD
+      ================================================ */
+
+      input.addEventListener(
+        "change",
+        () => {
+
+          if (!input.checked) {
+            return;
+          }
+
+          document
+            .querySelectorAll(
+              "#packages .choice"
+            )
+            .forEach(
+              item =>
+                item.classList.remove("active")
+            );
+
+          label.classList.add("active");
+
+          totalEl.textContent =
+            money(p.price);
+        }
+      );
+
+    });
+
+
+  /* =====================================================
+     TOTAL INICIAL
+  ===================================================== */
+
+  const firstPackage =
+    config.packages[0];
+
+  if (firstPackage) {
+
+    totalEl.textContent =
+      money(firstPackage.price);
+
+  }
+
+
+  /* =====================================================
+     SELECCIÓN DE COLOR
+  ===================================================== */
+
+  const colorChoices =
+    document.querySelectorAll(
+      ".colors .choice"
+    );
+
+
+  colorChoices.forEach(label => {
+
+    const input =
+      label.querySelector(
+        'input[name="color"]'
+      );
+
+    label.addEventListener(
+      "click",
+      () => {
+
+        /*
+          Seleccionar explícitamente
+          el radio.
+        */
+
+        input.checked = true;
+
+
+        colorChoices.forEach(
+          item =>
+            item.classList.remove(
+              "active"
+            )
+        );
+
+
+        label.classList.add("active");
+
+      }
+    );
+
+
+    input.addEventListener(
+      "change",
+      () => {
+
+        if (!input.checked) {
+          return;
+        }
+
+        colorChoices.forEach(
+          item =>
+            item.classList.remove(
+              "active"
+            )
+        );
+
+        label.classList.add("active");
+
+      }
+    );
+
+  });
+
+
+  /* =====================================================
+     FUNCIÓN PARA MOSTRAR ERROR
+  ===================================================== */
+
+  function showError(message) {
+
+    ok.style.display = "none";
+
+    err.textContent =
+      message ||
+      "No se pudo completar el pedido.";
+
+    err.style.display = "block";
+
+    err.scrollIntoView({
+      behavior:"smooth",
+      block:"center"
+    });
+  }
+
+
+  /* =====================================================
+     FUNCIÓN PARA MOSTRAR ÉXITO
+  ===================================================== */
+
+  function showSuccess(message) {
+
+    err.style.display = "none";
+
+    ok.textContent =
+      message;
+
+    ok.style.display = "block";
+
+    ok.scrollIntoView({
+      behavior:"smooth",
+      block:"center"
+    });
+  }
+
+
+  /* =====================================================
+     ENVÍO DEL PEDIDO
+  ===================================================== */
 
   form.addEventListener(
     "submit",
-    async (e) => {
+    async (event) => {
 
-      e.preventDefault();
+      event.preventDefault();
 
 
       ok.style.display = "none";
       err.style.display = "none";
 
 
+      /* ================================================
+         VALIDACIÓN NATIVA
+      ================================================ */
+
+      if (!form.checkValidity()) {
+
+        form.reportValidity();
+
+        return;
+      }
+
+
+      /* ================================================
+         OBTENER DATOS
+      ================================================ */
+
+      const formData =
+        new FormData(form);
+
+      const data =
+        Object.fromEntries(
+          formData.entries()
+        );
+
+
+      /* ================================================
+         VALIDACIÓN EXTRA
+      ================================================ */
+
+      if (!data.firstName?.trim()) {
+        showError("Falta completar: Nombre.");
+        return;
+      }
+
+      if (!data.lastName?.trim()) {
+        showError("Falta completar: Apellido.");
+        return;
+      }
+
+      if (!data.phone?.trim()) {
+        showError("Falta completar: Teléfono.");
+        return;
+      }
+
+      if (!data.address?.trim()) {
+        showError("Falta completar: Dirección.");
+        return;
+      }
+
+      if (!data.city?.trim()) {
+        showError("Falta completar: Ciudad.");
+        return;
+      }
+
+      if (!data.packageId) {
+        showError("Selecciona una cantidad.");
+        return;
+      }
+
+      if (!data.color) {
+        showError("Selecciona un color.");
+        return;
+      }
+
+
+      /* ================================================
+         BOTÓN
+      ================================================ */
+
       btn.disabled = true;
+
       btn.textContent =
         "PROCESANDO...";
 
 
-      const data =
-        Object.fromEntries(
-          new FormData(form).entries()
-        );
-
-
       try {
+
+        /* ==============================================
+           ENVIAR AL SERVER
+        ============================================== */
 
         const response =
           await fetch(
             "/api/orders",
             {
-              method: "POST",
+              method:"POST",
 
-              headers: {
+              headers:{
                 "Content-Type":
+                  "application/json",
+
+                "Accept":
                   "application/json"
               },
 
@@ -562,93 +858,181 @@
           );
 
 
-        const result =
-          await response.json();
+        /*
+          MUY IMPORTANTE:
 
+          Leemos primero como texto para que
+          NUNCA vuelva a aparecer:
+
+          Unexpected token '<'
+        */
+
+        const responseText =
+          await response.text();
+
+
+        let result = null;
+
+
+        try {
+
+          result =
+            JSON.parse(responseText);
+
+        } catch (_) {
+
+          /*
+            El servidor devolvió HTML,
+            no JSON.
+
+            No intentamos hacer .json()
+            nuevamente.
+          */
+
+          console.error(
+            "Respuesta no JSON del servidor:",
+            responseText
+          );
+
+          throw new Error(
+            "El servidor no devolvió una respuesta válida. Verifica que la aplicación esté desplegada correctamente."
+          );
+        }
+
+
+        /* ==============================================
+           ERROR DEL SERVIDOR
+        ============================================== */
 
         if (
           !response.ok ||
+          !result ||
           !result.ok
         ) {
 
           throw new Error(
-            result.message ||
+            result?.message ||
             "No se pudo completar el pedido."
           );
-
         }
 
 
-        /* =====================================
-           PEDIDO CREADO CORRECTAMENTE
-        ===================================== */
+        /* ==============================================
+           PEDIDO CREADO
+        ============================================== */
 
-        ok.textContent =
-          `¡Pedido recibido! Número de pedido: ${
-            result.order.name ||
-            "confirmado"
-          }.`;
-
-        ok.style.display =
-          "block";
+        const orderName =
+          result?.order?.name ||
+          "confirmado";
 
 
-        /* =====================================
+        showSuccess(
+          `¡Pedido recibido correctamente! Número de pedido: ${orderName}.`
+        );
+
+
+        /* ==============================================
            LIMPIAR FORMULARIO
-        ===================================== */
+        ============================================== */
 
         form.reset();
 
 
-        /* Restaurar cantidad inicial */
+        /* ==============================================
+           RESTAURAR CANTIDAD 1
+        ============================================== */
+
+        const firstPackageChoice =
+          document.querySelector(
+            "#packages .choice"
+          );
+
+        const firstPackageInput =
+          firstPackageChoice?.querySelector(
+            'input[name="packageId"]'
+          );
+
 
         document
           .querySelectorAll(
-            ".choice"
+            "#packages .choice"
           )
           .forEach(
-            x =>
-              x.classList.remove(
+            item =>
+              item.classList.remove(
                 "active"
               )
           );
 
 
-        document
-          .querySelector(
-            "#packages .choice"
-          )
-          ?.classList.add("active");
+        if (
+          firstPackageChoice &&
+          firstPackageInput
+        ) {
+
+          firstPackageInput.checked = true;
+
+          firstPackageChoice.classList.add(
+            "active"
+          );
+
+        }
 
 
-        /* Restaurar Negro */
+        /* ==============================================
+           RESTAURAR COLOR NEGRO
+        ============================================== */
 
-        document
-          .querySelector(
+        const blackInput =
+          document.querySelector(
             '.colors input[value="Negro"]'
-          )
-          ?.click();
+          );
 
 
-        /* Restaurar total */
+        colorChoices.forEach(
+          item =>
+            item.classList.remove(
+              "active"
+            )
+        );
 
-        if (config.packages[0]) {
+
+        if (blackInput) {
+
+          blackInput.checked = true;
+
+          blackInput
+            .closest(".choice")
+            ?.classList.add("active");
+
+        }
+
+
+        /* ==============================================
+           RESTAURAR TOTAL
+        ============================================== */
+
+        if (firstPackage) {
 
           totalEl.textContent =
-            money(
-              config.packages[0].price
-            );
+            money(firstPackage.price);
 
         }
 
 
       } catch (error) {
 
-        err.textContent =
-          error.message;
+        console.error(
+          "Error al enviar pedido:",
+          error
+        );
 
-        err.style.display =
-          "block";
+
+        showError(
+          error?.message ||
+          "No se pudo completar el pedido. Intenta nuevamente."
+        );
+
 
       } finally {
 
@@ -663,7 +1047,6 @@
   );
 
 })();
-
 </script>
 
 </body>
