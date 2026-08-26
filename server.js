@@ -17,20 +17,17 @@ const CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET;
 const API_VERSION =
   process.env.SHOPIFY_API_VERSION || "2026-07";
 
-const DEFAULT_CURRENCY =
+const CURRENCY =
   process.env.SHOPIFY_CURRENCY || "PYG";
 
 const PRODUCT_NAME =
   process.env.PRODUCT_NAME || "Cubre Canas";
 
-let shopifyToken = null;
-let shopifyTokenExpiresAt = 0;
+/* =====================================================
+   PRECIOS
+===================================================== */
 
-/* =========================================================
-   PAQUETES
-========================================================= */
-
-const DEFAULT_PACKAGES = [
+const PACKAGES = [
   {
     id: "1",
     label: "1 unidad",
@@ -48,42 +45,22 @@ const DEFAULT_PACKAGES = [
   }
 ];
 
-function packagesFromEnv() {
-  return DEFAULT_PACKAGES.map((pack) => {
-    const n = pack.id;
+/* =====================================================
+   COLORES
+===================================================== */
 
-    const envPrice =
-      process.env[`PACKAGE_${n}_PRICE`];
+const COLORS = [
+  "Negro",
+  "Rojizo",
+  "Café"
+];
 
-    const envLabel =
-      process.env[`PACKAGE_${n}_LABEL`];
-
-    const variantId =
-      process.env[`PACKAGE_${n}_VARIANT_ID`] || "";
-
-    const parsedPrice =
-      Number(envPrice);
-
-    return {
-      id: pack.id,
-
-      label:
-        envLabel || pack.label,
-
-      price:
-        envPrice &&
-        !Number.isNaN(parsedPrice)
-          ? parsedPrice
-          : pack.price,
-
-      variantId
-    };
-  });
-}
-
-/* =========================================================
+/* =====================================================
    TOKEN SHOPIFY
-========================================================= */
+===================================================== */
+
+let shopifyToken = null;
+let shopifyTokenExpiresAt = 0;
 
 async function getShopifyAccessToken() {
   if (
@@ -99,7 +76,7 @@ async function getShopifyAccessToken() {
     !CLIENT_SECRET
   ) {
     throw new Error(
-      "Faltan las credenciales de Shopify."
+      "Faltan las credenciales de Shopify en Render."
     );
   }
 
@@ -126,15 +103,25 @@ async function getShopifyAccessToken() {
     }
   );
 
-  const data =
-    await response.json();
+  const text =
+    await response.text();
+
+  let data;
+
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(
+      `Shopify devolvió una respuesta no válida: ${text.slice(0, 300)}`
+    );
+  }
 
   if (
     !response.ok ||
     !data.access_token
   ) {
     throw new Error(
-      `Shopify authentication error: ${JSON.stringify(data)}`
+      `Error de autenticación Shopify: ${JSON.stringify(data)}`
     );
   }
 
@@ -149,9 +136,9 @@ async function getShopifyAccessToken() {
   return shopifyToken;
 }
 
-/* =========================================================
-   GRAPHQL SHOPIFY
-========================================================= */
+/* =====================================================
+   SHOPIFY GRAPHQL
+===================================================== */
 
 async function shopifyGraphQL(
   query,
@@ -182,273 +169,55 @@ async function shopifyGraphQL(
       }
     );
 
-  const data =
-    await response.json();
+  const text =
+    await response.text();
+
+  let data;
+
+  try {
+    data =
+      JSON.parse(text);
+  } catch {
+    throw new Error(
+      `Shopify devolvió HTML o una respuesta no JSON: ${text.slice(0, 300)}`
+    );
+  }
 
   if (!response.ok) {
     throw new Error(
-      `Shopify HTTP error: ${JSON.stringify(data)}`
+      `Shopify HTTP ${response.status}: ${JSON.stringify(data)}`
     );
   }
 
   if (data.errors) {
     throw new Error(
-      `Shopify GraphQL error: ${JSON.stringify(data.errors)}`
+      data.errors
+        .map(
+          (error) =>
+            error.message
+        )
+        .join(" | ")
     );
   }
 
   return data;
 }
 
-/* =========================================================
-   BUSCAR PRODUCTO Y VARIANTES AUTOMÁTICAMENTE
-========================================================= */
-
-const FIND_PRODUCT = `
-query FindProduct($query: String!) {
-  products(first: 20, query: $query) {
-    nodes {
-      id
-      title
-
-      variants(first: 100) {
-        nodes {
-          id
-          title
-          price
-          sku
-          selectedOptions {
-            name
-            value
-          }
-        }
-      }
-    }
-  }
-}
-`;
-
-async function findCubreCanasVariants() {
-  const searchQuery =
-    `title:${PRODUCT_NAME}`;
-
-  const data =
-    await shopifyGraphQL(
-      FIND_PRODUCT,
-      {
-        query:
-          searchQuery
-      }
-    );
-
-  const products =
-    data?.data?.products?.nodes ||
-    [];
-
-  if (!products.length) {
-    throw new Error(
-      `No encontré el producto "${PRODUCT_NAME}" en Shopify.`
-    );
-  }
-
-  /*
-    Buscamos primero coincidencia exacta.
-  */
-
-  let product =
-    products.find(
-      (p) =>
-        p.title
-          .trim()
-          .toLowerCase() ===
-        PRODUCT_NAME
-          .trim()
-          .toLowerCase()
-    );
-
-  /*
-    Si no existe coincidencia exacta,
-    usamos la primera coincidencia.
-  */
-
-  if (!product) {
-    product =
-      products[0];
-  }
-
-  const variants =
-    product.variants?.nodes ||
-    [];
-
-  if (!variants.length) {
-    throw new Error(
-      `El producto "${product.title}" no tiene variantes disponibles.`
-    );
-  }
-
-  console.log(
-    "======================================"
-  );
-
-  console.log(
-    `Producto Shopify encontrado: ${product.title}`
-  );
-
-  console.log(
-    "Variantes encontradas:"
-  );
-
-  variants.forEach(
-    (variant) => {
-      console.log(
-        `- ${variant.title} | ${variant.price} | ${variant.id}`
-      );
-    }
-  );
-
-  console.log(
-    "======================================"
-  );
-
-  return variants;
-}
-
-/* =========================================================
-   NORMALIZAR TEXTO
-========================================================= */
-
-function normalizeText(value) {
-  return String(
-    value || ""
-  )
-    .normalize("NFD")
-    .replace(
-      /[\u0300-\u036f]/g,
-      ""
-    )
-    .toLowerCase()
-    .trim();
-}
-
-/* =========================================================
-   BUSCAR VARIANTE PARA EL PACK
-========================================================= */
-
-function findVariantForPackage(
-  variants,
-  selectedPackage
-) {
-  const wantedNumber =
-    Number(
-      selectedPackage.id
-    );
-
-  /*
-    1. Buscar por título:
-       "1 unidad"
-       "2 unidades"
-       "3 unidades"
-  */
-
-  const byTitle =
-    variants.find(
-      (variant) => {
-        const title =
-          normalizeText(
-            variant.title
-          );
-
-        const hasNumber =
-          title.includes(
-            String(
-              wantedNumber
-            )
-          );
-
-        const hasUnitWord =
-          title.includes(
-            "unidad"
-          );
-
-        return (
-          hasNumber &&
-          hasUnitWord
-        );
-      }
-    );
-
-  if (byTitle) {
-    return {
-      variant: byTitle,
-      exact: true
-    };
-  }
-
-  /*
-    2. Buscar por precio.
-  */
-
-  const byPrice =
-    variants.find(
-      (variant) =>
-        Number(
-          variant.price
-        ) ===
-        Number(
-          selectedPackage.price
-        )
-    );
-
-  if (byPrice) {
-    return {
-      variant: byPrice,
-      exact: true
-    };
-  }
-
-  /*
-    3. Si Shopify tiene una sola variante,
-       podemos utilizarla como base.
-  */
-
-  if (
-    variants.length === 1
-  ) {
-    return {
-      variant: variants[0],
-      exact: false
-    };
-  }
-
-  return null;
-}
-
-/* =========================================================
-   CONFIG DEL FORMULARIO
-========================================================= */
+/* =====================================================
+   CONFIG
+===================================================== */
 
 app.get(
   "/api/config",
   (_req, res) => {
-    const packages =
-      packagesFromEnv().map(
-        ({
-          id,
-          label,
-          price
-        }) => ({
-          id,
-          label,
-          price
-        })
-      );
-
     res.json({
+      ok: true,
+
       productName:
         PRODUCT_NAME,
 
       currency:
-        DEFAULT_CURRENCY,
+        CURRENCY,
 
       delivery:
         "Delivery gratis",
@@ -456,14 +225,18 @@ app.get(
       payment:
         "Pago contra entrega",
 
-      packages
+      packages:
+        PACKAGES,
+
+      colors:
+        COLORS
     });
   }
 );
 
-/* =========================================================
-   LIMPIAR DATOS
-========================================================= */
+/* =====================================================
+   LIMPIAR
+===================================================== */
 
 function clean(
   value,
@@ -476,28 +249,21 @@ function clean(
     .slice(0, max);
 }
 
-/* =========================================================
-   COLORES VÁLIDOS
-========================================================= */
-
-const VALID_COLORS = [
-  "Negro",
-  "Rojizo",
-  "Café"
-];
-
-/* =========================================================
+/* =====================================================
    VALIDAR PEDIDO
-========================================================= */
+===================================================== */
 
-function validateOrder(body) {
+function validateOrder(
+  body
+) {
   const required = [
     "firstName",
     "lastName",
     "phone",
     "address",
     "city",
-    "packageId"
+    "packageId",
+    "color"
   ];
 
   for (
@@ -510,28 +276,22 @@ function validateOrder(body) {
     }
   }
 
+  const packageId =
+    String(
+      body.packageId
+    );
+
   if (
     !["1", "2", "3"].includes(
-      String(
-        body.packageId
-      )
+      packageId
     )
   ) {
     return "Cantidad no válida.";
   }
 
-  /*
-    Aceptamos "color" y también
-    "colors" por compatibilidad.
-  */
-
   const color =
     clean(
       body.color,
-      60
-    ) ||
-    clean(
-      body.colors,
       60
     );
 
@@ -540,7 +300,7 @@ function validateOrder(body) {
   }
 
   if (
-    !VALID_COLORS.includes(
+    !COLORS.includes(
       color
     )
   ) {
@@ -553,12 +313,176 @@ function validateOrder(body) {
   return null;
 }
 
-/* =========================================================
-   ORDER CREATE
-========================================================= */
+/* =====================================================
+   BUSCAR VARIANTE
+===================================================== */
+
+const FIND_PRODUCTS = `
+query FindProducts($query: String!) {
+  products(first: 20, query: $query) {
+    nodes {
+      id
+      title
+
+      variants(first: 100) {
+        nodes {
+          id
+          title
+          price
+
+          selectedOptions {
+            name
+            value
+          }
+        }
+      }
+    }
+  }
+}
+`;
+
+async function findShopifyVariants() {
+  const data =
+    await shopifyGraphQL(
+      FIND_PRODUCTS,
+      {
+        query:
+          `title:${PRODUCT_NAME}`
+      }
+    );
+
+  const products =
+    data?.data?.products?.nodes ||
+    [];
+
+  if (
+    !products.length
+  ) {
+    throw new Error(
+      `No encontré "${PRODUCT_NAME}" en Shopify.`
+    );
+  }
+
+  let product =
+    products.find(
+      (item) =>
+        item.title
+          .trim()
+          .toLowerCase() ===
+        PRODUCT_NAME
+          .trim()
+          .toLowerCase()
+    );
+
+  if (!product) {
+    product =
+      products[0];
+  }
+
+  const variants =
+    product
+      ?.variants
+      ?.nodes || [];
+
+  if (!variants.length) {
+    throw new Error(
+      `El producto "${product.title}" no tiene variantes.`
+    );
+  }
+
+  console.log(
+    "Producto Shopify:",
+    product.title
+  );
+
+  console.log(
+    "Variantes Shopify:"
+  );
+
+  variants.forEach(
+    (variant) => {
+      console.log(
+        variant.title,
+        "|",
+        variant.price,
+        "|",
+        variant.id
+      );
+    }
+  );
+
+  return variants;
+}
+
+/* =====================================================
+   ENCONTRAR VARIANTE DEL PACK
+===================================================== */
+
+function findVariant(
+  variants,
+  packageData
+) {
+  const number =
+    packageData.id;
+
+  /* Buscar por título */
+
+  let variant =
+    variants.find(
+      (item) => {
+        const title =
+          item.title
+            .toLowerCase();
+
+        return (
+          title.includes(
+            number
+          ) &&
+          title.includes(
+            "unidad"
+          )
+        );
+      }
+    );
+
+  if (variant) {
+    return variant;
+  }
+
+  /* Buscar por precio */
+
+  variant =
+    variants.find(
+      (item) =>
+        Number(
+          item.price
+        ) ===
+        Number(
+          packageData.price
+        )
+    );
+
+  if (variant) {
+    return variant;
+  }
+
+  /* Si solamente existe una variante */
+
+  if (
+    variants.length === 1
+  ) {
+    return variants[0];
+  }
+
+  return null;
+}
+
+/* =====================================================
+   CREAR PEDIDO SHOPIFY
+===================================================== */
 
 const ORDER_CREATE = `
-mutation orderCreate(
+mutation CreateOrder(
   $order: OrderCreateOrderInput!
 ) {
   orderCreate(order: $order) {
@@ -572,33 +496,46 @@ mutation orderCreate(
       id
       name
       displayFinancialStatus
-
-      lineItems(first: 10) {
-        nodes {
-          title
-          quantity
-
-          variant {
-            id
-          }
-        }
-      }
     }
   }
 }
 `;
 
-/* =========================================================
-   CREAR PEDIDO
-========================================================= */
+/* =====================================================
+   API PEDIDOS
+===================================================== */
 
 app.post(
   "/api/orders",
   async (req, res) => {
+
+    /*
+      IMPORTANTE:
+
+      Esta ruta SIEMPRE intenta devolver JSON.
+    */
+
     try {
-      /* -------------------------------------
+
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "NUEVO PEDIDO RECIBIDO"
+      );
+
+      console.log(
+        JSON.stringify(
+          req.body,
+          null,
+          2
+        )
+      );
+
+      /* --------------------------------
          CREDENCIALES
-      ------------------------------------- */
+      -------------------------------- */
 
       if (
         !SHOP ||
@@ -609,50 +546,93 @@ app.post(
           ok: false,
 
           message:
-            "La aplicación no está configurada con las credenciales de Shopify."
+            "Shopify todavía no está configurado correctamente en Render."
         });
       }
 
-      /* -------------------------------------
-         VALIDAR FORMULARIO
-      ------------------------------------- */
+      /* --------------------------------
+         VALIDACIÓN
+      -------------------------------- */
 
-      const validationError =
+      const validation =
         validateOrder(
           req.body
         );
 
-      if (
-        validationError
-      ) {
+      if (validation) {
         return res.status(400).json({
           ok: false,
-
           message:
-            validationError
+            validation
         });
       }
 
-      const body =
-        req.body;
+      /* --------------------------------
+         DATOS
+      -------------------------------- */
 
-      /* -------------------------------------
+      const firstName =
+        clean(
+          req.body.firstName,
+          80
+        );
+
+      const lastName =
+        clean(
+          req.body.lastName,
+          80
+        );
+
+      const email =
+        clean(
+          req.body.email,
+          160
+        );
+
+      const phone =
+        clean(
+          req.body.phone,
+          40
+        );
+
+      const address =
+        clean(
+          req.body.address,
+          180
+        );
+
+      const city =
+        clean(
+          req.body.city,
+          80
+        );
+
+      const color =
+        clean(
+          req.body.color,
+          60
+        );
+
+      const notes =
+        clean(
+          req.body.notes,
+          500
+        );
+
+      /* --------------------------------
          PAQUETE
-      ------------------------------------- */
+      -------------------------------- */
 
-      const packages =
-        packagesFromEnv();
-
-      const selected =
-        packages.find(
-          (p) =>
-            p.id ===
+      const packageData =
+        PACKAGES.find(
+          (item) =>
+            item.id ===
             String(
-              body.packageId
+              req.body.packageId
             )
         );
 
-      if (!selected) {
+      if (!packageData) {
         return res.status(400).json({
           ok: false,
 
@@ -661,181 +641,48 @@ app.post(
         });
       }
 
-      /* -------------------------------------
-         DATOS CLIENTE
-      ------------------------------------- */
-
-      const firstName =
-        clean(
-          body.firstName,
-          80
-        );
-
-      const lastName =
-        clean(
-          body.lastName,
-          80
-        );
-
-      const email =
-        clean(
-          body.email,
-          160
-        );
-
-      const phone =
-        clean(
-          body.phone,
-          40
-        );
-
-      const address =
-        clean(
-          body.address,
-          180
-        );
-
-      const city =
-        clean(
-          body.city,
-          80
-        );
-
-      const notes =
-        clean(
-          body.notes,
-          500
-        );
-
-      const color =
-        clean(
-          body.color,
-          60
-        ) ||
-        clean(
-          body.colors,
-          60
-        );
-
-      /* -------------------------------------
-         OBTENER VARIANTES DE SHOPIFY
-      ------------------------------------- */
+      /* --------------------------------
+         VARIANTES
+      -------------------------------- */
 
       const variants =
-        await findCubreCanasVariants();
+        await findShopifyVariants();
 
-      /* -------------------------------------
-         BUSCAR VARIANTE
-      ------------------------------------- */
-
-      let variantResult =
-        findVariantForPackage(
+      const variant =
+        findVariant(
           variants,
-          selected
+          packageData
         );
 
-      /*
-        Si existe una variable
-        PACKAGE_X_VARIANT_ID,
-        tiene prioridad.
-      */
+      if (!variant) {
 
-      const configuredVariantId =
-        selected.variantId;
-
-      let variantId = null;
-
-      let usingPriceOverride =
-        false;
-
-      if (
-        configuredVariantId
-      ) {
-        variantId =
-          configuredVariantId;
-      } else if (
-        variantResult
-      ) {
-        variantId =
-          variantResult.variant.id;
-
-        /*
-          Si no coincidió exactamente
-          con la variante, usamos el precio
-          seleccionado del formulario.
-        */
-
-        if (
-          !variantResult.exact
-        ) {
-          usingPriceOverride =
-            true;
-        }
-      }
-
-      if (!variantId) {
-        return res.status(500).json({
+        return res.status(400).json({
           ok: false,
 
           message:
-            `No pude encontrar automáticamente una variante de Shopify para "${selected.label}".`
+            `No encontré una variante de Shopify para ${packageData.label}.`
         });
       }
 
-      /* -------------------------------------
-         LINE ITEM
-      ------------------------------------- */
-
-      const lineItem = {
-        variantId,
-
-        /*
-          IMPORTANTE:
-          Cada botón representa un PACK.
-
-          Por eso siempre quantity = 1.
-
-          1 unidad -> 1 pack
-          2 unidades -> 1 pack
-          3 unidades -> 1 pack
-        */
-
-        quantity: 1
-      };
-
-      /*
-        Si usamos una variante base porque
-        Shopify no tiene variantes separadas
-        para los packs, ponemos el precio
-        correcto directamente en el pedido.
-
-        Shopify permite priceSet en lineItems
-        de orderCreate.
-      */
-
-      if (
-        usingPriceOverride
-      ) {
-        lineItem.priceSet = {
-          shopMoney: {
-            amount:
-              String(
-                selected.price
-              ),
-
-            currencyCode:
-              DEFAULT_CURRENCY
-          }
-        };
-      }
-
-      /* -------------------------------------
-         CREAR OBJETO ORDER
-      ------------------------------------- */
+      /* --------------------------------
+         PEDIDO
+      -------------------------------- */
 
       const order = {
+
         lineItems: [
-          lineItem
+          {
+            variantId:
+              variant.id,
+
+            /*
+              IMPORTANTE:
+              cada opción ya representa
+              un pack completo.
+            */
+
+            quantity: 1
+          }
         ],
 
         customer: {
@@ -898,18 +745,18 @@ app.post(
         note: [
           "Pedido desde formulario Cubre Canas",
 
+          `Cantidad: ${packageData.label}`,
+
+          `Precio: ${packageData.price} Gs`,
+
           `Color: ${color}`,
-
-          `Cantidad/pack: ${selected.label}`,
-
-          `Precio seleccionado: ${selected.price} Gs`,
 
           "Delivery: gratis",
 
           "Pago: contra entrega",
 
           notes
-            ? `Nota: ${notes}`
+            ? `Observaciones: ${notes}`
             : ""
         ]
           .filter(Boolean)
@@ -918,65 +765,39 @@ app.post(
           )
       };
 
-      /*
-        Eliminar undefined
-      */
-
-      Object.keys(order)
-        .forEach(
-          (key) => {
-            if (
-              order[key] ===
-              undefined
-            ) {
-              delete order[key];
-            }
-          }
-        );
-
-      /* -------------------------------------
+      /* --------------------------------
          LOG
-      ------------------------------------- */
+      -------------------------------- */
 
       console.log(
-        "======================================"
+        "Cliente:",
+        firstName,
+        lastName
       );
 
       console.log(
-        "CREANDO PEDIDO"
+        "Paquete:",
+        packageData.label
       );
 
       console.log(
-        `Cliente: ${firstName} ${lastName}`
+        "Precio:",
+        packageData.price
       );
 
       console.log(
-        `Pack: ${selected.label}`
+        "Color:",
+        color
       );
 
       console.log(
-        `Precio: ${selected.price} Gs`
+        "Variant:",
+        variant.id
       );
 
-      console.log(
-        `Color: ${color}`
-      );
-
-      console.log(
-        `Variant ID: ${variantId}`
-      );
-
-      console.log(
-        `Price override: ${usingPriceOverride}`
-      );
-
-      console.log(
-        "======================================"
-      );
-
-      /* -------------------------------------
-         ENVIAR A SHOPIFY
-      ------------------------------------- */
+      /* --------------------------------
+         SHOPIFY
+      -------------------------------- */
 
       const data =
         await shopifyGraphQL(
@@ -986,13 +807,13 @@ app.post(
           }
         );
 
-      const payload =
-        data?.data
-          ?.orderCreate;
+      const result =
+        data?.data?.orderCreate;
 
-      if (!payload) {
+      if (!result) {
+
         console.error(
-          "Respuesta Shopify:",
+          "Respuesta inválida:",
           data
         );
 
@@ -1000,109 +821,128 @@ app.post(
           ok: false,
 
           message:
-            "Shopify no devolvió una respuesta válida."
+            "Shopify no devolvió información del pedido."
         });
       }
 
-      /* -------------------------------------
-         USER ERRORS
-      ------------------------------------- */
+      /* --------------------------------
+         ERRORES SHOPIFY
+      -------------------------------- */
 
       if (
-        payload.userErrors &&
-        payload.userErrors.length
+        result.userErrors &&
+        result.userErrors.length
       ) {
+
+        const message =
+          result.userErrors
+            .map(
+              (error) =>
+                error.message
+            )
+            .join(
+              " | "
+            );
+
         console.error(
-          "Shopify userErrors:",
-          payload.userErrors
+          "Shopify rechazó:",
+          message
         );
 
         return res.status(400).json({
           ok: false,
 
-          message:
-            payload.userErrors
-              .map(
-                (e) =>
-                  e.message
-              )
-              .join(
-                " "
-              )
+          message
         });
       }
 
-      /* -------------------------------------
-         ÉXITO
-      ------------------------------------- */
+      /* --------------------------------
+         PEDIDO CREADO
+      -------------------------------- */
 
-      if (
-        !payload.order
-      ) {
+      if (!result.order) {
+
         return res.status(502).json({
           ok: false,
 
           message:
-            "Shopify no devolvió el pedido creado."
+            "Shopify no creó el pedido."
         });
       }
 
       console.log(
-        "======================================"
+        "PEDIDO CREADO:",
+        result.order.name
       );
 
       console.log(
-        "PEDIDO CREADO CORRECTAMENTE"
+        "================================="
       );
 
-      console.log(
-        `Número: ${payload.order.name}`
-      );
+      return res.status(200).json({
 
-      console.log(
-        "======================================"
-      );
-
-      return res.json({
         ok: true,
+
+        message:
+          "Pedido creado correctamente.",
 
         order: {
           id:
-            payload.order.id,
+            result.order.id,
 
           name:
-            payload.order.name
+            result.order.name
         }
       });
 
     } catch (error) {
+
       console.error(
-        "======================================"
+        "ERROR AL CREAR PEDIDO:"
       );
 
       console.error(
-        "ERROR GENERAL:",
         error
       );
 
-      console.error(
-        "======================================"
-      );
+      /*
+        MUY IMPORTANTE:
+        incluso si algo falla,
+        devolvemos JSON.
+      */
 
       return res.status(500).json({
+
         ok: false,
 
         message:
-          error.message ||
-          "No se pudo crear el pedido. Intenta nuevamente."
+          error?.message ||
+          "Ocurrió un error al crear el pedido."
       });
     }
   }
 );
 
-/* =========================================================
-   SERVIR INDEX.HTML
-========================================================= */
+/* =====================================================
+   ERRORES JSON DE API
+===================================================== */
+
+app.use(
+  "/api",
+  (req, res) => {
+
+    res.status(404).json({
+      ok: false,
+
+      message:
+        "Ruta API no encontrada."
+    });
+  }
+);
+
+/* =====================================================
+   ARCHIVOS DEL FORMULARIO
+===================================================== */
 
 app.use(
   express.static(
@@ -1110,8 +950,13 @@ app.use(
   )
 );
 
+/* =====================================================
+   FALLBACK HTML
+===================================================== */
+
 app.use(
   (req, res) => {
+
     res.sendFile(
       path.join(
         __dirname,
@@ -1121,15 +966,16 @@ app.use(
   }
 );
 
-/* =========================================================
-   INICIAR SERVIDOR
-========================================================= */
+/* =====================================================
+   SERVIDOR
+===================================================== */
 
 app.listen(
   PORT,
   () => {
+
     console.log(
-      "======================================"
+      "================================="
     );
 
     console.log(
@@ -1144,21 +990,22 @@ app.listen(
       "Precios:"
     );
 
-    packagesFromEnv()
-      .forEach(
-        (p) => {
-          console.log(
-            `- ${p.label}: ${p.price} Gs`
-          );
-        }
-      );
+    PACKAGES.forEach(
+      (item) => {
+
+        console.log(
+          `${item.label}: ${item.price} Gs`
+        );
+
+      }
+    );
 
     console.log(
       "Colores: Negro, Rojizo, Café"
     );
 
     console.log(
-      "======================================"
+      "================================="
     );
   }
 );
