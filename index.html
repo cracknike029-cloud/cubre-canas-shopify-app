@@ -43,14 +43,13 @@
       color:#666;
     }
 
-    label{
+    label.field{
       display:block;
       font-weight:700;
       margin:15px 0 7px;
     }
 
     input,
-    select,
     textarea{
       width:100%;
       padding:13px;
@@ -106,6 +105,15 @@
       font-size:14px;
     }
 
+    .color-group{
+      margin-top:14px;
+    }
+
+    .color-title{
+      font-weight:700;
+      margin-bottom:7px;
+    }
+
     .summary{
       margin-top:18px;
       padding:14px;
@@ -157,6 +165,7 @@
     }
 
     @media(max-width:460px){
+
       body{
         padding:12px;
       }
@@ -184,7 +193,10 @@
     <form id="orderForm">
 
       <!-- NOMBRE -->
-      <label for="firstName">Nombre</label>
+
+      <label class="field" for="firstName">
+        Nombre
+      </label>
 
       <input
         id="firstName"
@@ -194,7 +206,10 @@
       >
 
       <!-- APELLIDO -->
-      <label for="lastName">Apellido</label>
+
+      <label class="field" for="lastName">
+        Apellido
+      </label>
 
       <input
         id="lastName"
@@ -204,7 +219,10 @@
       >
 
       <!-- TELÉFONO -->
-      <label for="phone">Teléfono</label>
+
+      <label class="field" for="phone">
+        Teléfono
+      </label>
 
       <input
         id="phone"
@@ -215,11 +233,15 @@
       >
 
       <!-- CORREO -->
-      <label for="email">
+
+      <label class="field" for="email">
+
         Correo electrónico
+
         <span style="font-weight:400">
           (opcional)
         </span>
+
       </label>
 
       <input
@@ -230,7 +252,10 @@
       >
 
       <!-- DIRECCIÓN -->
-      <label for="address">Dirección</label>
+
+      <label class="field" for="address">
+        Dirección
+      </label>
 
       <input
         id="address"
@@ -240,7 +265,10 @@
       >
 
       <!-- CIUDAD -->
-      <label for="city">Ciudad</label>
+
+      <label class="field" for="city">
+        Ciudad
+      </label>
 
       <input
         id="city"
@@ -250,52 +278,33 @@
       >
 
       <!-- CANTIDAD -->
-      <label>Cantidad</label>
 
-      <div id="packages" class="packs"></div>
+      <label class="field">
+        Cantidad
+      </label>
 
-      <!-- COLOR -->
-      <label>Color</label>
+      <div
+        id="packages"
+        class="packs"
+      ></div>
 
-      <div class="colors">
+      <!-- COLORES -->
 
-        <label class="choice active">
-          <input
-            type="radio"
-            name="color"
-            value="Negro"
-            required
-            checked
-          >
-          Negro
-        </label>
-
-        <label class="choice">
-          <input
-            type="radio"
-            name="color"
-            value="Rojizo"
-          >
-          Rojizo
-        </label>
-
-        <label class="choice">
-          <input
-            type="radio"
-            name="color"
-            value="Café"
-          >
-          Café
-        </label>
-
-      </div>
+      <div id="colorGroups"></div>
 
       <!-- OBSERVACIONES -->
-      <label for="notes">
+
+      <label
+        class="field"
+        for="notes"
+      >
+
         Observaciones
+
         <span style="font-weight:400">
           (opcional)
         </span>
+
       </label>
 
       <textarea
@@ -304,26 +313,43 @@
       ></textarea>
 
       <!-- RESUMEN -->
+
       <div class="summary">
 
         <div>
-          <span>Delivery</span>
-          <strong>Gratis</strong>
+          <span>
+            Delivery
+          </span>
+
+          <strong>
+            Gratis
+          </strong>
         </div>
 
         <div>
-          <span>Pago</span>
-          <strong>Contra entrega</strong>
+          <span>
+            Pago
+          </span>
+
+          <strong>
+            Contra entrega
+          </strong>
         </div>
 
         <div>
-          <span>Total</span>
-          <strong id="total">169.000 Gs</strong>
+          <span>
+            Total
+          </span>
+
+          <strong id="total">
+            169.000 Gs
+          </strong>
         </div>
 
       </div>
 
       <!-- BOTÓN -->
+
       <button
         id="submitBtn"
         type="submit"
@@ -332,6 +358,7 @@
       </button>
 
       <!-- MENSAJES -->
+
       <div
         id="ok"
         class="ok"
@@ -352,39 +379,55 @@
 
 
 <script>
+
 (async () => {
 
   /* =====================================================
      CONFIGURACIÓN DE RESPALDO
-     Si /api/config falla, estos datos siguen funcionando.
   ===================================================== */
 
   const FALLBACK_CONFIG = {
-    productName: "Cubre Canas",
 
-    currency: "PYG",
+    productName:
+      "Cubre Canas",
 
-    delivery: "Delivery gratis",
+    currency:
+      "PYG",
 
-    payment: "Pago contra entrega",
+    delivery:
+      "Delivery gratis",
+
+    payment:
+      "Pago contra entrega",
+
+    colors: [
+      "Negro",
+      "Rojizo",
+      "Café"
+    ],
 
     packages: [
+
       {
-        id: "1",
-        label: "1 unidad",
-        price: 169000
+        id:"1",
+        label:"1 unidad",
+        price:169000
       },
+
       {
-        id: "2",
-        label: "2 unidades",
-        price: 321100
+        id:"2",
+        label:"2 unidades",
+        price:321100
       },
+
       {
-        id: "3",
-        label: "3 unidades",
-        price: 456300
+        id:"3",
+        label:"3 unidades",
+        price:456300
       }
+
     ]
+
   };
 
 
@@ -397,6 +440,9 @@
 
   const packagesEl =
     document.getElementById("packages");
+
+  const colorGroupsEl =
+    document.getElementById("colorGroups");
 
   const totalEl =
     document.getElementById("total");
@@ -420,16 +466,19 @@
 
   const money = (value) => {
 
-    const number = Number(value);
+    const number =
+      Number(value);
 
-    if (!Number.isFinite(number)) {
+    if(!Number.isFinite(number)){
       return "0 Gs";
     }
 
     return (
-      new Intl.NumberFormat("es-PY").format(number)
+      new Intl.NumberFormat("es-PY")
+        .format(number)
       + " Gs"
     );
+
   };
 
 
@@ -437,89 +486,63 @@
      OBTENER CONFIGURACIÓN
   ===================================================== */
 
-  let config = null;
+  let config =
+    FALLBACK_CONFIG;
 
-  try {
+  try{
 
     const response =
       await fetch(
         "/api/config",
         {
           method:"GET",
+
           headers:{
-            "Accept":"application/json"
+            "Accept":
+              "application/json"
           },
+
           cache:"no-store"
         }
       );
 
-    /*
-      IMPORTANTE:
-
-      Primero leemos como texto.
-      Así evitamos el error:
-
-      Unexpected token '<'
-
-      cuando el servidor devuelve HTML
-      en lugar de JSON.
-    */
-
     const text =
       await response.text();
 
-    let parsed = null;
+    let parsed =
+      null;
 
-    try {
-      parsed = JSON.parse(text);
-    } catch (_) {
-      parsed = null;
-    }
+    try{
 
-    if (
-      !response.ok ||
-      !parsed
-    ) {
+      parsed =
+        JSON.parse(text);
 
-      console.warn(
-        "No se pudo obtener /api/config. Usando configuración de respaldo."
-      );
+    }catch(_){}
 
-      config = FALLBACK_CONFIG;
+    if(
+      response.ok &&
+      parsed &&
+      Array.isArray(parsed.packages) &&
+      parsed.packages.length
+    ){
 
-    } else {
-
-      config = parsed;
+      config =
+        parsed;
 
     }
 
-  } catch (error) {
+  }catch(error){
 
     console.warn(
-      "Error conectando con /api/config:",
+      "Usando configuración de respaldo.",
       error
     );
 
-    config = FALLBACK_CONFIG;
   }
 
 
   /* =====================================================
-     VALIDAR CONFIGURACIÓN
-  ===================================================== */
-
-  if (
-    !config ||
-    !Array.isArray(config.packages) ||
-    config.packages.length === 0
-  ) {
-
-    config = FALLBACK_CONFIG;
-  }
-
-
-  /* =====================================================
-     NOMBRE DEL PRODUCTO
+     PRODUCTO
   ===================================================== */
 
   titleEl.textContent =
@@ -528,106 +551,369 @@
 
 
   /* =====================================================
-     LIMPIAR PAQUETES
+     OBTENER PAQUETE SELECCIONADO
   ===================================================== */
 
-  packagesEl.innerHTML = "";
+  function getSelectedPackage(){
+
+    return form.querySelector(
+      'input[name="packageId"]:checked'
+    );
+
+  }
+
+
+  function getPackageData(){
+
+    const id =
+      getSelectedPackage()?.value;
+
+    return config.packages.find(
+      p =>
+        String(p.id) ===
+        String(id)
+    ) || config.packages[0];
+
+  }
 
 
   /* =====================================================
-     CREAR OPCIONES DE CANTIDAD
+     CREAR COLORES SEGÚN CANTIDAD
   ===================================================== */
 
-  config.packages
-    .slice(0, 3)
-    .forEach((p, index) => {
+  function renderColors(quantity){
 
-      const label =
-        document.createElement("label");
+    colorGroupsEl.innerHTML = "";
 
-      label.className =
-        "choice" +
-        (index === 0 ? " active" : "");
 
-      const input =
-        document.createElement("input");
+    for(
+      let i = 0;
+      i < quantity;
+      i++
+    ){
 
-      input.type = "radio";
-      input.name = "packageId";
-      input.value = String(p.id);
-      input.required = true;
+      const group =
+        document.createElement("div");
 
-      if (index === 0) {
-        input.checked = true;
+      group.className =
+        "color-group";
+
+
+      const title =
+        document.createElement("div");
+
+      title.className =
+        "color-title";
+
+
+      if(quantity === 1){
+
+        title.textContent =
+          "Color";
+
+      }else{
+
+        title.textContent =
+          `Color de la unidad ${i + 1}`;
+
       }
 
 
-      const strong =
-        document.createElement("strong");
+      const colors =
+        document.createElement("div");
 
-      strong.textContent =
-        p.label ||
-        `${index + 1} unidad${index > 0 ? "es" : ""}`;
-
-
-      const br =
-        document.createElement("br");
+      colors.className =
+        "colors";
 
 
-      const small =
-        document.createElement("small");
+      (
+        config.colors ||
+        [
+          "Negro",
+          "Rojizo",
+          "Café"
+        ]
+      ).forEach(
+        (color,colorIndex) => {
 
-      small.textContent =
-        money(p.price);
+          const label =
+            document.createElement("label");
 
-
-      label.appendChild(input);
-      label.appendChild(strong);
-      label.appendChild(br);
-      label.appendChild(small);
-
-      packagesEl.appendChild(label);
-
-
-      /* ================================================
-         CAMBIO DE CANTIDAD
-      ================================================ */
-
-      input.addEventListener(
-        "change",
-        () => {
-
-          if (!input.checked) {
-            return;
-          }
-
-          document
-            .querySelectorAll(
-              "#packages .choice"
-            )
-            .forEach(
-              item =>
-                item.classList.remove("active")
+          label.className =
+            "choice" +
+            (
+              colorIndex === 0
+                ? " active"
+                : ""
             );
 
-          label.classList.add("active");
 
-          totalEl.textContent =
-            money(p.price);
+          const input =
+            document.createElement("input");
+
+          input.type =
+            "radio";
+
+          input.name =
+            `color${i + 1}`;
+
+          input.value =
+            color;
+
+          input.required =
+            true;
+
+          if(colorIndex === 0){
+
+            input.checked =
+              true;
+
+          }
+
+
+          const text =
+            document.createElement("strong");
+
+          text.textContent =
+            color;
+
+
+          label.append(
+            input,
+            text
+          );
+
+          colors.appendChild(
+            label
+          );
+
+
+          /* CLICK */
+
+          label.addEventListener(
+            "click",
+            () => {
+
+              input.checked =
+                true;
+
+              colors
+                .querySelectorAll(
+                  ".choice"
+                )
+                .forEach(
+                  item =>
+                    item.classList.remove(
+                      "active"
+                    )
+                );
+
+              label.classList.add(
+                "active"
+              );
+
+            }
+          );
+
+
+          /* CHANGE */
+
+          input.addEventListener(
+            "change",
+            () => {
+
+              if(!input.checked){
+                return;
+              }
+
+              colors
+                .querySelectorAll(
+                  ".choice"
+                )
+                .forEach(
+                  item =>
+                    item.classList.remove(
+                      "active"
+                    )
+                );
+
+              label.classList.add(
+                "active"
+              );
+
+            }
+          );
+
         }
       );
 
-    });
+
+      group.append(
+        title,
+        colors
+      );
+
+      colorGroupsEl.appendChild(
+        group
+      );
+
+    }
+
+  }
 
 
   /* =====================================================
-     TOTAL INICIAL
+     CREAR CANTIDADES
+  ===================================================== */
+
+  packagesEl.innerHTML =
+    "";
+
+
+  config.packages
+    .slice(0,3)
+    .forEach(
+      (p,index) => {
+
+        const label =
+          document.createElement(
+            "label"
+          );
+
+        label.className =
+          "choice" +
+          (
+            index === 0
+              ? " active"
+              : ""
+          );
+
+
+        const input =
+          document.createElement(
+            "input"
+          );
+
+        input.type =
+          "radio";
+
+        input.name =
+          "packageId";
+
+        input.value =
+          String(p.id);
+
+        input.required =
+          true;
+
+        input.checked =
+          index === 0;
+
+
+        const strong =
+          document.createElement(
+            "strong"
+          );
+
+        strong.textContent =
+          p.label ||
+          `${index + 1} unidad${
+            index > 0
+              ? "es"
+              : ""
+          }`;
+
+
+        const br =
+          document.createElement(
+            "br"
+          );
+
+
+        const small =
+          document.createElement(
+            "small"
+          );
+
+        small.textContent =
+          money(p.price);
+
+
+        label.append(
+          input,
+          strong,
+          br,
+          small
+        );
+
+
+        packagesEl.appendChild(
+          label
+        );
+
+
+        input.addEventListener(
+          "change",
+          () => {
+
+            if(!input.checked){
+              return;
+            }
+
+
+            packagesEl
+              .querySelectorAll(
+                ".choice"
+              )
+              .forEach(
+                item =>
+                  item.classList.remove(
+                    "active"
+                  )
+              );
+
+
+            label.classList.add(
+              "active"
+            );
+
+
+            totalEl.textContent =
+              money(p.price);
+
+
+            /*
+              IMPORTANTE:
+
+              Si seleccionamos:
+
+              1 unidad → 1 color
+
+              2 unidades → 2 colores
+
+              3 unidades → 3 colores
+            */
+
+            renderColors(
+              Number(p.id)
+            );
+
+          }
+        );
+
+      }
+    );
+
+
+  /* =====================================================
+     ESTADO INICIAL
   ===================================================== */
 
   const firstPackage =
     config.packages[0];
 
-  if (firstPackage) {
+
+  if(firstPackage){
 
     totalEl.textContent =
       money(firstPackage.price);
@@ -635,146 +921,94 @@
   }
 
 
-  /* =====================================================
-     SELECCIÓN DE COLOR
-  ===================================================== */
-
-  const colorChoices =
-    document.querySelectorAll(
-      ".colors .choice"
-    );
-
-
-  colorChoices.forEach(label => {
-
-    const input =
-      label.querySelector(
-        'input[name="color"]'
-      );
-
-    label.addEventListener(
-      "click",
-      () => {
-
-        /*
-          Seleccionar explícitamente
-          el radio.
-        */
-
-        input.checked = true;
-
-
-        colorChoices.forEach(
-          item =>
-            item.classList.remove(
-              "active"
-            )
-        );
-
-
-        label.classList.add("active");
-
-      }
-    );
-
-
-    input.addEventListener(
-      "change",
-      () => {
-
-        if (!input.checked) {
-          return;
-        }
-
-        colorChoices.forEach(
-          item =>
-            item.classList.remove(
-              "active"
-            )
-        );
-
-        label.classList.add("active");
-
-      }
-    );
-
-  });
+  renderColors(
+    Number(
+      firstPackage?.id || 1
+    )
+  );
 
 
   /* =====================================================
-     FUNCIÓN PARA MOSTRAR ERROR
+     ERROR
   ===================================================== */
 
-  function showError(message) {
+  function showError(message){
 
-    ok.style.display = "none";
+    ok.style.display =
+      "none";
 
     err.textContent =
       message ||
       "No se pudo completar el pedido.";
 
-    err.style.display = "block";
+    err.style.display =
+      "block";
 
     err.scrollIntoView({
       behavior:"smooth",
       block:"center"
     });
+
   }
 
 
   /* =====================================================
-     FUNCIÓN PARA MOSTRAR ÉXITO
+     ÉXITO
   ===================================================== */
 
-  function showSuccess(message) {
+  function showSuccess(message){
 
-    err.style.display = "none";
+    err.style.display =
+      "none";
 
     ok.textContent =
       message;
 
-    ok.style.display = "block";
+    ok.style.display =
+      "block";
 
     ok.scrollIntoView({
       behavior:"smooth",
       block:"center"
     });
+
   }
 
 
   /* =====================================================
-     ENVÍO DEL PEDIDO
+     ENVIAR PEDIDO
   ===================================================== */
 
   form.addEventListener(
     "submit",
-    async (event) => {
+    async event => {
 
       event.preventDefault();
 
 
-      ok.style.display = "none";
-      err.style.display = "none";
+      ok.style.display =
+        "none";
+
+      err.style.display =
+        "none";
 
 
-      /* ================================================
-         VALIDACIÓN NATIVA
-      ================================================ */
+      /* VALIDACIÓN */
 
-      if (!form.checkValidity()) {
+      if(!form.checkValidity()){
 
         form.reportValidity();
 
         return;
+
       }
 
 
-      /* ================================================
-         OBTENER DATOS
-      ================================================ */
+      /* DATOS */
 
       const formData =
         new FormData(form);
+
 
       const data =
         Object.fromEntries(
@@ -782,61 +1016,93 @@
         );
 
 
-      /* ================================================
-         VALIDACIÓN EXTRA
-      ================================================ */
+      const quantity =
+        Number(
+          data.packageId
+        );
 
-      if (!data.firstName?.trim()) {
-        showError("Falta completar: Nombre.");
-        return;
+
+      /* =================================================
+         OBTENER TODOS LOS COLORES
+      ================================================= */
+
+      const colors = [];
+
+
+      for(
+        let i = 1;
+        i <= quantity;
+        i++
+      ){
+
+        const color =
+          data[`color${i}`];
+
+
+        if(!color){
+
+          showError(
+            `Falta seleccionar el color de la unidad ${i}.`
+          );
+
+          return;
+
+        }
+
+
+        colors.push(
+          color
+        );
+
       }
 
-      if (!data.lastName?.trim()) {
-        showError("Falta completar: Apellido.");
+
+      /*
+        Eliminamos los campos individuales.
+
+        Enviamos:
+
+        colors: [
+          "Negro",
+          "Rojizo",
+          "Café"
+        ]
+      */
+
+      delete data.color1;
+      delete data.color2;
+      delete data.color3;
+
+
+      data.colors =
+        colors;
+
+
+      const packageData =
+        getPackageData();
+
+
+      if(!packageData){
+
+        showError(
+          "Cantidad no válida."
+        );
+
         return;
+
       }
 
-      if (!data.phone?.trim()) {
-        showError("Falta completar: Teléfono.");
-        return;
-      }
 
-      if (!data.address?.trim()) {
-        showError("Falta completar: Dirección.");
-        return;
-      }
+      /* BOTÓN */
 
-      if (!data.city?.trim()) {
-        showError("Falta completar: Ciudad.");
-        return;
-      }
-
-      if (!data.packageId) {
-        showError("Selecciona una cantidad.");
-        return;
-      }
-
-      if (!data.color) {
-        showError("Selecciona un color.");
-        return;
-      }
-
-
-      /* ================================================
-         BOTÓN
-      ================================================ */
-
-      btn.disabled = true;
+      btn.disabled =
+        true;
 
       btn.textContent =
         "PROCESANDO...";
 
 
-      try {
-
-        /* ==============================================
-           ENVIAR AL SERVER
-        ============================================== */
+      try{
 
         const response =
           await fetch(
@@ -858,104 +1124,76 @@
           );
 
 
-        /*
-          MUY IMPORTANTE:
-
-          Leemos primero como texto para que
-          NUNCA vuelva a aparecer:
-
-          Unexpected token '<'
-        */
-
-        const responseText =
+        const text =
           await response.text();
 
 
-        let result = null;
+        let result =
+          null;
 
 
-        try {
+        try{
 
           result =
-            JSON.parse(responseText);
+            JSON.parse(text);
 
-        } catch (_) {
+        }catch(_){}
 
-          /*
-            El servidor devolvió HTML,
-            no JSON.
 
-            No intentamos hacer .json()
-            nuevamente.
-          */
-
-          console.error(
-            "Respuesta no JSON del servidor:",
-            responseText
-          );
+        if(!result){
 
           throw new Error(
-            "El servidor no devolvió una respuesta válida. Verifica que la aplicación esté desplegada correctamente."
+            "El servidor no devolvió JSON. Revisa el despliegue de Render y los logs."
           );
+
         }
 
 
-        /* ==============================================
-           ERROR DEL SERVIDOR
-        ============================================== */
-
-        if (
+        if(
           !response.ok ||
-          !result ||
           !result.ok
-        ) {
+        ){
 
           throw new Error(
-            result?.message ||
+            result.message ||
             "No se pudo completar el pedido."
           );
+
         }
 
 
-        /* ==============================================
-           PEDIDO CREADO
-        ============================================== */
-
-        const orderName =
-          result?.order?.name ||
-          "confirmado";
-
+        /* ÉXITO */
 
         showSuccess(
-          `¡Pedido recibido correctamente! Número de pedido: ${orderName}.`
+          `¡Pedido recibido correctamente! Número de pedido: ${
+            result.order?.name ||
+            "confirmado"
+          }.`
         );
 
 
-        /* ==============================================
-           LIMPIAR FORMULARIO
-        ============================================== */
+        /* LIMPIAR */
 
         form.reset();
 
 
-        /* ==============================================
-           RESTAURAR CANTIDAD 1
-        ============================================== */
+        /* CANTIDAD 1 */
 
-        const firstPackageChoice =
-          document.querySelector(
-            "#packages .choice"
+        const firstChoice =
+          packagesEl.querySelector(
+            ".choice"
           );
 
-        const firstPackageInput =
-          firstPackageChoice?.querySelector(
+
+        const firstInput =
+          firstChoice?.querySelector(
             'input[name="packageId"]'
           );
 
 
-        document
+        packagesEl
           .querySelectorAll(
-            "#packages .choice"
+            ".choice"
           )
           .forEach(
             item =>
@@ -965,62 +1203,35 @@
           );
 
 
-        if (
-          firstPackageChoice &&
-          firstPackageInput
-        ) {
+        if(
+          firstInput
+        ){
 
-          firstPackageInput.checked = true;
+          firstInput.checked =
+            true;
 
-          firstPackageChoice.classList.add(
+          firstChoice.classList.add(
             "active"
           );
 
         }
 
 
-        /* ==============================================
-           RESTAURAR COLOR NEGRO
-        ============================================== */
+        /* COLOR */
 
-        const blackInput =
-          document.querySelector(
-            '.colors input[value="Negro"]'
+        renderColors(1);
+
+
+        /* TOTAL */
+
+        totalEl.textContent =
+          money(
+            firstPackage?.price ||
+            0
           );
 
 
-        colorChoices.forEach(
-          item =>
-            item.classList.remove(
-              "active"
-            )
-        );
-
-
-        if (blackInput) {
-
-          blackInput.checked = true;
-
-          blackInput
-            .closest(".choice")
-            ?.classList.add("active");
-
-        }
-
-
-        /* ==============================================
-           RESTAURAR TOTAL
-        ============================================== */
-
-        if (firstPackage) {
-
-          totalEl.textContent =
-            money(firstPackage.price);
-
-        }
-
-
-      } catch (error) {
+      }catch(error){
 
         console.error(
           "Error al enviar pedido:",
@@ -1034,9 +1245,10 @@
         );
 
 
-      } finally {
+      }finally{
 
-        btn.disabled = false;
+        btn.disabled =
+          false;
 
         btn.textContent =
           "COMPLETAR ORDEN";
@@ -1047,6 +1259,7 @@
   );
 
 })();
+
 </script>
 
 </body>
