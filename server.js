@@ -5,6 +5,32 @@ const path = require("path");
 
 const app = express();
 
+/* =====================================================
+   CORS
+   Permite que el formulario personalizado de Shopify
+   se comunique con esta API desde el navegador.
+===================================================== */
+
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET,POST,OPTIONS"
+  );
+
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Accept"
+  );
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
+
 
 /* =====================================================
    EXPRESS
@@ -638,10 +664,12 @@ async function findShopifyProductAndVariants(){
     "================================="
   );
 
+
   console.log(
     "PRODUCTO SHOPIFY:",
     product.title
   );
+
 
   console.log(
     "VARIANTES SHOPIFY:"
@@ -656,15 +684,18 @@ async function findShopifyProductAndVariants(){
         variant.title
       );
 
+
       console.log(
         "Precio:",
         variant.price
       );
 
+
       console.log(
         "Variant ID:",
         variant.id
       );
+
 
       console.log(
         "Opciones:",
@@ -672,6 +703,7 @@ async function findShopifyProductAndVariants(){
           variant.selectedOptions
         )
       );
+
 
       console.log(
         "---------------------------------"
@@ -879,6 +911,7 @@ app.post(
       console.log(
         "================================="
       );
+
 
       console.log(
         "NUEVO PEDIDO RECIBIDO"
@@ -1114,15 +1147,18 @@ app.post(
             `Unidad ${index + 1}:`
           );
 
+
           console.log(
             "Color:",
             item.color
           );
 
+
           console.log(
             "Variant ID:",
             item.variant.id
           );
+
 
           console.log(
             "Variant:",
@@ -1606,13 +1642,16 @@ app.listen(
       "================================="
     );
 
+
     console.log(
       `Cubre Canas app running on port ${PORT}`
     );
 
+
     console.log(
       `Producto: ${PRODUCT_NAME}`
     );
+
 
     console.log(
       "Precios:"
