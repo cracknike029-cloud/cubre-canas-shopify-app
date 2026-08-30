@@ -757,16 +757,13 @@ function normalizeMetaPhone(value) {
 }
 
 function getRequestIp(req) {
-
   const forwarded =
     req.headers["x-forwarded-for"];
 
   if (forwarded) {
-
     return String(forwarded)
       .split(",")[0]
       .trim();
-
   }
 
   return (
@@ -777,7 +774,6 @@ function getRequestIp(req) {
 }
 
 function getMetaBrowserIdentifiers(req) {
-
   const body =
     req.body || {};
 
@@ -821,7 +817,6 @@ async function sendMetaPurchaseEvent({
 }) {
 
   if (!META_ACCESS_TOKEN) {
-
     console.warn(
       "META_ACCESS_TOKEN no está configurado. El pedido de Shopify se creó, pero no se envió Purchase a Meta."
     );
@@ -835,7 +830,6 @@ async function sendMetaPurchaseEvent({
   }
 
   if (!META_PIXEL_ID) {
-
     console.warn(
       "META_PIXEL_ID no está configurado. El pedido de Shopify se creó, pero no se envió Purchase a Meta."
     );
@@ -867,27 +861,34 @@ async function sendMetaPurchaseEvent({
   const browserIdentifiers =
     getMetaBrowserIdentifiers(req);
 
+  /*
+    Primero intentamos utilizar la URL real
+    desde la que llegó el pedido.
+
+    Si el formulario envía origin/referer,
+    se utilizan esos valores.
+
+    SITE_URL queda como respaldo.
+  */
+
   const eventSourceUrl =
-    SITE_URL ||
     req.headers.origin ||
     req.headers.referer ||
+    SITE_URL ||
     `https://${SHOP}`;
 
   const userData = {
-
     client_ip_address:
       getRequestIp(req),
 
     client_user_agent:
       req.headers["user-agent"] ||
       ""
-
   };
 
   /* EMAIL */
 
   if (email) {
-
     userData.em = [
       sha256(
         normalizeMetaText(
@@ -895,34 +896,28 @@ async function sendMetaPurchaseEvent({
         )
       )
     ];
-
   }
 
   /* TELÉFONO */
 
   if (phone) {
-
     const normalizedPhone =
       normalizeMetaPhone(
         phone
       );
 
     if (normalizedPhone) {
-
       userData.ph = [
         sha256(
           normalizedPhone
         )
       ];
-
     }
-
   }
 
   /* NOMBRE */
 
   if (firstName) {
-
     userData.fn = [
       sha256(
         normalizeMetaText(
@@ -930,13 +925,11 @@ async function sendMetaPurchaseEvent({
         )
       )
     ];
-
   }
 
   /* APELLIDO */
 
   if (lastName) {
-
     userData.ln = [
       sha256(
         normalizeMetaText(
@@ -944,13 +937,11 @@ async function sendMetaPurchaseEvent({
         )
       )
     ];
-
   }
 
   /* CIUDAD */
 
   if (city) {
-
     userData.ct = [
       sha256(
         normalizeMetaText(
@@ -958,7 +949,6 @@ async function sendMetaPurchaseEvent({
         )
       )
     ];
-
   }
 
   /* PAÍS */
@@ -972,10 +962,8 @@ async function sendMetaPurchaseEvent({
   if (
     browserIdentifiers.fbp
   ) {
-
     userData.fbp =
       browserIdentifiers.fbp;
-
   }
 
   /* FBC */
@@ -983,10 +971,8 @@ async function sendMetaPurchaseEvent({
   if (
     browserIdentifiers.fbc
   ) {
-
     userData.fbc =
       browserIdentifiers.fbc;
-
   }
 
   /* =================================================
@@ -996,7 +982,6 @@ async function sendMetaPurchaseEvent({
   const contents =
     selectedVariants.map(
       item => ({
-
         id:
           item.variant.id,
 
@@ -1006,7 +991,6 @@ async function sendMetaPurchaseEvent({
         item_price:
           packageData.price /
           quantity
-
       })
     );
 
@@ -1015,7 +999,6 @@ async function sendMetaPurchaseEvent({
   ================================================= */
 
   const event = {
-
     event_name:
       "Purchase",
 
@@ -1037,7 +1020,6 @@ async function sendMetaPurchaseEvent({
       userData,
 
     custom_data: {
-
       currency:
         CURRENCY,
 
@@ -1068,9 +1050,7 @@ async function sendMetaPurchaseEvent({
           order.name ||
           order.id
         )
-
     }
-
   };
 
   /* =================================================
@@ -1078,20 +1058,16 @@ async function sendMetaPurchaseEvent({
   ================================================= */
 
   const payload = {
-
     data: [
       event
     ]
-
   };
 
   if (
     META_TEST_EVENT_CODE
   ) {
-
     payload.test_event_code =
       META_TEST_EVENT_CODE;
-
   }
 
   /* =================================================
@@ -1115,7 +1091,6 @@ async function sendMetaPurchaseEvent({
   console.log(
     JSON.stringify(
       {
-
         event_name:
           event.event_name,
 
@@ -1128,11 +1103,13 @@ async function sendMetaPurchaseEvent({
         currency:
           event.custom_data.currency,
 
+        event_source_url:
+          event.event_source_url,
+
         test_event:
           Boolean(
             META_TEST_EVENT_CODE
           )
-
       },
       null,
       2
@@ -1147,25 +1124,21 @@ async function sendMetaPurchaseEvent({
     await fetch(
       url,
       {
-
         method:
           "POST",
 
         headers: {
-
           "Content-Type":
             "application/json",
 
           "Accept":
             "application/json"
-
         },
 
         body:
           JSON.stringify(
             payload
           )
-
       }
     );
 
@@ -1175,26 +1148,20 @@ async function sendMetaPurchaseEvent({
   let data;
 
   try {
-
     data =
       JSON.parse(
         text
       );
-
   } catch {
-
     data = {
       raw: text
     };
-
   }
 
   if (!response.ok) {
-
     throw new Error(
       `Meta CAPI HTTP ${response.status}: ${JSON.stringify(data)}`
     );
-
   }
 
   console.log(
@@ -1214,15 +1181,10 @@ async function sendMetaPurchaseEvent({
   );
 
   return {
-
     ok: true,
-
     data
-
   };
-
 }
-
 
 /* =====================================================
    CREAR PEDIDO
@@ -1239,11 +1201,8 @@ mutation CreateOrder(
   ){
 
     userErrors{
-
       field
-
       message
-
     }
 
     order{
@@ -1265,11 +1224,8 @@ mutation CreateOrder(
           quantity
 
           variant{
-
             id
-
             title
-
           }
 
         }
@@ -1283,7 +1239,6 @@ mutation CreateOrder(
 }
 
 `;
-
 
 /* =====================================================
    API PEDIDOS
@@ -1314,7 +1269,6 @@ app.post(
         )
       );
 
-
       /* ===============================================
          CREDENCIALES
       =============================================== */
@@ -1328,16 +1282,13 @@ app.post(
         return res
           .status(500)
           .json({
-
             ok: false,
 
             message:
               "Shopify todavía no está configurado correctamente en Render."
-
           });
 
       }
-
 
       /* ===============================================
          VALIDACIÓN
@@ -1353,16 +1304,13 @@ app.post(
         return res
           .status(400)
           .json({
-
             ok: false,
 
             message:
               validation
-
           });
 
       }
-
 
       /* ===============================================
          DATOS DEL CLIENTE
@@ -1410,7 +1358,6 @@ app.post(
           500
         );
 
-
       /* ===============================================
          PAQUETE
       =============================================== */
@@ -1432,16 +1379,13 @@ app.post(
         return res
           .status(400)
           .json({
-
             ok: false,
 
             message:
               "El paquete seleccionado no existe."
-
           });
 
       }
-
 
       /* ===============================================
          COLORES
@@ -1460,7 +1404,6 @@ app.post(
         colors
       );
 
-
       /* ===============================================
          BUSCAR VARIANTES SHOPIFY
       =============================================== */
@@ -1469,7 +1412,6 @@ app.post(
         variants
       } =
         await findShopifyProductAndVariants();
-
 
       /* ===============================================
          ENCONTRAR VARIANTE POR COLOR
@@ -1497,16 +1439,12 @@ app.post(
             }
 
             return {
-
               color,
-
               variant
-
             };
 
           }
         );
-
 
       /* ===============================================
          MOSTRAR VARIANTES
@@ -1540,7 +1478,6 @@ app.post(
         }
       );
 
-
       /* ===============================================
          PRECIO
       =============================================== */
@@ -1549,7 +1486,6 @@ app.post(
         packageData.price /
         quantity;
 
-
       /* ===============================================
          LINE ITEMS
       =============================================== */
@@ -1557,7 +1493,6 @@ app.post(
       const lineItems =
         selectedVariants.map(
           item => ({
-
             variantId:
               item.variant.id,
 
@@ -1583,30 +1518,25 @@ app.post(
             properties: [
 
               {
-
                 name:
                   "Color seleccionado",
 
                 value:
                   item.color
-
               },
 
               {
-
                 name:
                   "Paquete",
 
                 value:
                   packageData.label
-
               }
 
             ]
 
           })
         );
-
 
       /* ===============================================
          RESUMEN DE COLORES
@@ -1625,7 +1555,6 @@ app.post(
             " | "
           );
 
-
       /* ===============================================
          PEDIDO SHOPIFY
       =============================================== */
@@ -1635,12 +1564,8 @@ app.post(
         lineItems,
 
         /*
-          IMPORTANTE:
-
           Si el cliente NO pone Gmail,
-          NO enviamos customer.toUpsert.
-
-          Esto evita errores de Shopify.
+          no enviamos customer.toUpsert.
         */
 
         ...(email
@@ -1668,11 +1593,6 @@ app.post(
 
             }
           : {}),
-
-        /*
-          El email también solamente
-          se envía cuando existe.
-        */
 
         ...(email
           ? {
@@ -1747,7 +1667,6 @@ app.post(
 
       };
 
-
       /* ===============================================
          LOG
       =============================================== */
@@ -1786,7 +1705,6 @@ app.post(
         )
       );
 
-
       /* ===============================================
          CREAR PEDIDO EN SHOPIFY
       =============================================== */
@@ -1799,26 +1717,21 @@ app.post(
           }
         );
 
-
       const result =
         data?.data?.orderCreate;
-
 
       if (!result) {
 
         return res
           .status(502)
           .json({
-
             ok: false,
 
             message:
               "Shopify no devolvió información del pedido."
-
           });
 
       }
-
 
       /* ===============================================
          ERRORES DE SHOPIFY
@@ -1839,25 +1752,20 @@ app.post(
               " | "
             );
 
-
         console.error(
           "SHOPIFY RECHAZÓ:",
           message
         );
 
-
         return res
           .status(400)
           .json({
-
             ok: false,
 
             message
-
           });
 
       }
-
 
       /* ===============================================
          VERIFICAR PEDIDO
@@ -1870,17 +1778,15 @@ app.post(
         return res
           .status(502)
           .json({
-
             ok: false,
 
             message:
               "Shopify no creó el pedido."
-
           });
 
       }
       /* ===============================================
-         ÉXITO
+         PEDIDO CREADO CORRECTAMENTE
       =============================================== */
 
       console.log(
@@ -1893,6 +1799,11 @@ app.post(
       );
 
       console.log(
+        "ID SHOPIFY:",
+        result.order.id
+      );
+
+      console.log(
         "================================="
       );
 
@@ -1902,15 +1813,20 @@ app.post(
       =============================================== */
 
       /*
-        Shopify ya confirmó que el pedido existe.
+        IMPORTANTE:
 
-        Si Meta falla, NO detenemos ni invalidamos
-        el pedido de Shopify.
+        El pedido YA fue creado correctamente
+        en Shopify.
+
+        Si Meta presenta cualquier error,
+        NO se cancela el pedido.
       */
+
+      let metaResult = null;
 
       try {
 
-        const metaResult =
+        metaResult =
           await sendMetaPurchaseEvent({
 
             req,
@@ -1936,31 +1852,22 @@ app.post(
 
           });
 
-
-        console.log(
-          "Resultado Meta:",
-          JSON.stringify(
-            metaResult,
-            null,
-            2
-          )
-        );
-
-      } catch (metaError) {
+      } catch (
+        metaError
+      ) {
 
         console.error(
-          "ERROR AL ENVIAR PURCHASE A META:",
+          "META: ERROR AL ENVIAR PURCHASE:"
+        );
+
+        console.error(
+          metaError?.message ||
           metaError
         );
 
-        /*
-          IMPORTANTE:
-
-          El pedido de Shopify ya fue creado.
-
-          Un fallo de Meta NO debe mostrar error
-          al cliente ni cancelar el pedido.
-        */
+        console.log(
+          "IMPORTANTE: el pedido de Shopify ya fue creado. El error de Meta NO afecta el pedido."
+        );
 
       }
 
@@ -1986,18 +1893,37 @@ app.post(
             name:
               result.order.name
 
+          },
+
+          meta: {
+
+            purchaseSent:
+              metaResult?.ok === true,
+
+            skipped:
+              metaResult?.skipped === true,
+
+            reason:
+              metaResult?.reason ||
+              null
+
           }
 
         });
 
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
 
       console.error(
-        "ERROR AL CREAR PEDIDO:",
-        error
+        "ERROR AL CREAR PEDIDO:"
       );
 
+      console.error(
+        error?.message ||
+        error
+      );
 
       return res
         .status(500)
@@ -2014,18 +1940,52 @@ app.post(
     }
 
   }
-
 );
 
 
 /* =====================================================
-   ERRORES API
+   RUTA DE SALUD
+===================================================== */
+
+app.get(
+  "/health",
+  (_req, res) => {
+
+    res.json({
+
+      ok: true,
+
+      service:
+        "Cubre Canas",
+
+      shopify:
+        Boolean(
+          SHOP &&
+          CLIENT_ID &&
+          CLIENT_SECRET
+        ),
+
+      meta:
+
+        Boolean(
+          META_PIXEL_ID &&
+          META_ACCESS_TOKEN
+        )
+
+    });
+
+  }
+);
+
+
+/* =====================================================
+   RUTA API NO ENCONTRADA
 ===================================================== */
 
 app.use(
   "/api",
   (
-    req,
+    _req,
     res
   ) => {
 
@@ -2045,7 +2005,7 @@ app.use(
 
 
 /* =====================================================
-   ARCHIVOS
+   ARCHIVOS ESTÁTICOS
 ===================================================== */
 
 app.use(
@@ -2056,7 +2016,7 @@ app.use(
 
 
 /* =====================================================
-   FALLBACK HTML
+   FALLBACK
 ===================================================== */
 
 app.use(
@@ -2077,7 +2037,7 @@ app.use(
 
 
 /* =====================================================
-   SERVIDOR
+   INICIAR SERVIDOR
 ===================================================== */
 
 app.listen(
@@ -2100,7 +2060,6 @@ app.listen(
       "Precios:"
     );
 
-
     PACKAGES.forEach(
       item => {
 
@@ -2111,19 +2070,23 @@ app.listen(
       }
     );
 
-
     console.log(
       "Colores:",
       COLORS.join(", ")
     );
 
+    console.log(
+      "Shopify:",
+      SHOP
+        ? "CONFIGURADO"
+        : "NO CONFIGURADO"
+    );
 
     console.log(
       "Meta Pixel:",
       META_PIXEL_ID ||
-        "NO CONFIGURADO"
+      "NO CONFIGURADO"
     );
-
 
     console.log(
       "Meta Access Token:",
@@ -2132,12 +2095,10 @@ app.listen(
         : "NO CONFIGURADO"
     );
 
-
     console.log(
       "Meta API:",
       META_API_VERSION
     );
-
 
     console.log(
       "Meta Test Event:",
@@ -2145,7 +2106,6 @@ app.listen(
         ? "ACTIVO"
         : "NO ACTIVO"
     );
-
 
     console.log(
       "================================="
