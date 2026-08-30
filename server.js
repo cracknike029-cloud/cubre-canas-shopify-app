@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const path = require("path");
+const crypto = require("crypto");
 
 const app = express();
 
@@ -29,7 +30,6 @@ app.use((req, res, next) => {
   next();
 });
 
-
 /* =====================================================
    EXPRESS
 ===================================================== */
@@ -45,7 +45,6 @@ app.use(
     extended: true
   })
 );
-
 
 /* =====================================================
    CONFIGURACIÓN
@@ -76,6 +75,29 @@ const PRODUCT_NAME =
   process.env.PRODUCT_NAME ||
   "Cubre Canas";
 
+/* =====================================================
+   META CONVERSIONS API
+===================================================== */
+
+const META_PIXEL_ID =
+  process.env.META_PIXEL_ID ||
+  "1732993884580308";
+
+const META_ACCESS_TOKEN =
+  process.env.META_ACCESS_TOKEN ||
+  "";
+
+const META_API_VERSION =
+  process.env.META_API_VERSION ||
+  "v25.0";
+
+const META_TEST_EVENT_CODE =
+  process.env.META_TEST_EVENT_CODE ||
+  "";
+
+const SITE_URL =
+  process.env.SITE_URL ||
+  "https://import-store-9250.myshopify.com";
 
 /* =====================================================
    PRECIOS
@@ -101,7 +123,6 @@ const PACKAGES = [
   }
 ];
 
-
 /* =====================================================
    COLORES
 ===================================================== */
@@ -112,7 +133,6 @@ const COLORS = [
   "Café"
 ];
 
-
 /* =====================================================
    TOKEN SHOPIFY
 ===================================================== */
@@ -120,7 +140,6 @@ const COLORS = [
 let shopifyToken = null;
 
 let shopifyTokenExpiresAt = 0;
-
 
 async function getShopifyAccessToken() {
 
@@ -131,7 +150,6 @@ async function getShopifyAccessToken() {
     return shopifyToken;
   }
 
-
   if (
     !SHOP ||
     !CLIENT_ID ||
@@ -141,7 +159,6 @@ async function getShopifyAccessToken() {
       "Faltan SHOPIFY_SHOP, SHOPIFY_CLIENT_ID o SHOPIFY_CLIENT_SECRET en Render."
     );
   }
-
 
   const response = await fetch(
     `https://${SHOP}/admin/oauth/access_token`,
@@ -166,13 +183,10 @@ async function getShopifyAccessToken() {
     }
   );
 
-
   const text =
     await response.text();
 
-
   let data;
-
 
   try {
 
@@ -184,25 +198,19 @@ async function getShopifyAccessToken() {
     throw new Error(
       `Shopify devolvió una respuesta no JSON al autenticar: ${text.slice(0, 300)}`
     );
-
   }
-
 
   if (
     !response.ok ||
     !data.access_token
   ) {
-
     throw new Error(
       `Error de autenticación Shopify: ${JSON.stringify(data)}`
     );
-
   }
-
 
   shopifyToken =
     data.access_token;
-
 
   shopifyTokenExpiresAt =
     Date.now() +
@@ -212,10 +220,8 @@ async function getShopifyAccessToken() {
     ) *
     1000;
 
-
   return shopifyToken;
 }
-
 
 /* =====================================================
    SHOPIFY GRAPHQL
@@ -228,7 +234,6 @@ async function shopifyGraphQL(
 
   const token =
     await getShopifyAccessToken();
-
 
   const response =
     await fetch(
@@ -251,13 +256,10 @@ async function shopifyGraphQL(
       }
     );
 
-
   const text =
     await response.text();
 
-
   let data;
-
 
   try {
 
@@ -269,33 +271,24 @@ async function shopifyGraphQL(
     throw new Error(
       `Shopify devolvió HTML o una respuesta no JSON: ${text.slice(0, 300)}`
     );
-
   }
 
-
   if (!response.ok) {
-
     throw new Error(
       `Shopify HTTP ${response.status}: ${JSON.stringify(data)}`
     );
-
   }
 
-
   if (data.errors?.length) {
-
     throw new Error(
       data.errors
         .map(error => error.message)
         .join(" | ")
     );
-
   }
-
 
   return data;
 }
-
 
 /* =====================================================
    CONFIG DEL FORMULARIO
@@ -330,7 +323,6 @@ app.get(
   }
 );
 
-
 /* =====================================================
    LIMPIAR DATOS
 ===================================================== */
@@ -345,9 +337,7 @@ function clean(
   )
     .trim()
     .slice(0, max);
-
 }
-
 
 /* =====================================================
    NORMALIZAR COLOR
@@ -363,7 +353,6 @@ function normalizeColor(
       60
     ).toLowerCase();
 
-
   const found =
     COLORS.find(
       color =>
@@ -371,10 +360,8 @@ function normalizeColor(
         normalized
     );
 
-
   return found || null;
 }
-
 
 /* =====================================================
    VALIDAR PEDIDO
@@ -401,7 +388,6 @@ function validateOrder(
     "packageId"
   ];
 
-
   for (
     const field of required
   ) {
@@ -415,17 +401,13 @@ function validateOrder(
       return (
         `Falta completar: ${field}`
       );
-
     }
-
   }
-
 
   const packageId =
     String(
       body.packageId
     );
-
 
   if (
     ![
@@ -440,9 +422,7 @@ function validateOrder(
     return (
       "Cantidad no válida."
     );
-
   }
-
 
   /* =================================================
      COLORES
@@ -457,15 +437,12 @@ function validateOrder(
     return (
       "Selecciona los colores de todas las unidades."
     );
-
   }
-
 
   const quantity =
     Number(
       packageId
     );
-
 
   if (
     body.colors.length !==
@@ -481,9 +458,7 @@ function validateOrder(
           : ""
       }.`
     );
-
   }
-
 
   for (
     let i = 0;
@@ -502,15 +477,11 @@ function validateOrder(
           i + 1
         }. Selecciona Negro, Rojizo o Café.`
       );
-
     }
-
   }
-
 
   return null;
 }
-
 
 /* =====================================================
    BUSCAR PRODUCTO Y VARIANTES
@@ -565,7 +536,6 @@ query FindProducts(
 
 `;
 
-
 async function findShopifyProductAndVariants() {
 
   const data =
@@ -577,11 +547,9 @@ async function findShopifyProductAndVariants() {
       }
     );
 
-
   const products =
     data?.data?.products?.nodes ||
     [];
-
 
   if (
     !products.length
@@ -590,9 +558,7 @@ async function findShopifyProductAndVariants() {
     throw new Error(
       `No encontré "${PRODUCT_NAME}" en Shopify.`
     );
-
   }
-
 
   const exact =
     products.find(
@@ -605,16 +571,13 @@ async function findShopifyProductAndVariants() {
           .toLowerCase()
     );
 
-
   const product =
     exact ||
     products[0];
 
-
   const variants =
     product?.variants?.nodes ||
     [];
-
 
   if (
     !variants.length
@@ -623,9 +586,7 @@ async function findShopifyProductAndVariants() {
     throw new Error(
       `El producto "${product.title}" no tiene variantes.`
     );
-
   }
-
 
   console.log(
     "================================="
@@ -639,7 +600,6 @@ async function findShopifyProductAndVariants() {
   console.log(
     "VARIANTES SHOPIFY:"
   );
-
 
   variants.forEach(
     variant => {
@@ -673,13 +633,11 @@ async function findShopifyProductAndVariants() {
     }
   );
 
-
   return {
     product,
     variants
   };
 }
-
 
 /* =====================================================
    OBTENER COLOR DE VARIANTE
@@ -698,14 +656,12 @@ function getColorFromVariant(
         "color"
     );
 
-
   return (
     option?.value
       ?.trim() ||
     null
   );
 }
-
 
 /* =====================================================
    BUSCAR VARIANTE POR COLOR
@@ -719,7 +675,6 @@ function findVariantByColor(
   const wanted =
     color.toLowerCase();
 
-
   /* PRIMERO:
      selectedOptions */
 
@@ -732,22 +687,18 @@ function findVariantByColor(
             item
           );
 
-
         return (
           variantColor &&
           variantColor
             .toLowerCase() ===
           wanted
         );
-
       }
     );
-
 
   if (variant) {
     return variant;
   }
-
 
   /* SEGUNDO:
      título exacto */
@@ -761,11 +712,9 @@ function findVariantByColor(
         wanted
     );
 
-
   if (variant) {
     return variant;
   }
-
 
   /* TERCERO:
      buscar dentro del título */
@@ -780,8 +729,498 @@ function findVariantByColor(
           )
     );
 
-
   return variant || null;
+}
+/* =====================================================
+   META - UTILIDADES CONVERSIONS API
+===================================================== */
+
+function sha256(value) {
+  return crypto
+    .createHash("sha256")
+    .update(String(value), "utf8")
+    .digest("hex");
+}
+
+function normalizeMetaText(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function normalizeMetaPhone(value) {
+  return String(value ?? "")
+    .replace(/\D/g, "");
+}
+
+function getRequestIp(req) {
+
+  const forwarded =
+    req.headers["x-forwarded-for"];
+
+  if (forwarded) {
+
+    return String(forwarded)
+      .split(",")[0]
+      .trim();
+
+  }
+
+  return (
+    req.ip ||
+    req.socket?.remoteAddress ||
+    ""
+  );
+}
+
+function getMetaBrowserIdentifiers(req) {
+
+  const body =
+    req.body || {};
+
+  const fbp =
+    clean(
+      body.fbp ||
+      body._fbp ||
+      "",
+      250
+    );
+
+  const fbc =
+    clean(
+      body.fbc ||
+      body._fbc ||
+      "",
+      250
+    );
+
+  return {
+    fbp: fbp || null,
+    fbc: fbc || null
+  };
+}
+
+/* =====================================================
+   META - ENVIAR PURCHASE
+===================================================== */
+
+async function sendMetaPurchaseEvent({
+  req,
+  order,
+  packageData,
+  quantity,
+  selectedVariants,
+  email,
+  firstName,
+  lastName,
+  phone,
+  city
+}) {
+
+  if (!META_ACCESS_TOKEN) {
+
+    console.warn(
+      "META_ACCESS_TOKEN no está configurado. El pedido de Shopify se creó, pero no se envió Purchase a Meta."
+    );
+
+    return {
+      ok: false,
+      skipped: true,
+      reason:
+        "META_ACCESS_TOKEN_MISSING"
+    };
+  }
+
+  if (!META_PIXEL_ID) {
+
+    console.warn(
+      "META_PIXEL_ID no está configurado. El pedido de Shopify se creó, pero no se envió Purchase a Meta."
+    );
+
+    return {
+      ok: false,
+      skipped: true,
+      reason:
+        "META_PIXEL_ID_MISSING"
+    };
+  }
+
+  /*
+    Usamos el ID del pedido de Shopify
+    como event_id.
+
+    Esto ayuda a evitar que el mismo
+    pedido sea contabilizado como
+    múltiples eventos diferentes.
+  */
+
+  const eventId =
+    String(
+      order.id ||
+      order.name ||
+      `shopify_${Date.now()}`
+    );
+
+  const browserIdentifiers =
+    getMetaBrowserIdentifiers(req);
+
+  const eventSourceUrl =
+    SITE_URL ||
+    req.headers.origin ||
+    req.headers.referer ||
+    `https://${SHOP}`;
+
+  const userData = {
+
+    client_ip_address:
+      getRequestIp(req),
+
+    client_user_agent:
+      req.headers["user-agent"] ||
+      ""
+
+  };
+
+  /* EMAIL */
+
+  if (email) {
+
+    userData.em = [
+      sha256(
+        normalizeMetaText(
+          email
+        )
+      )
+    ];
+
+  }
+
+  /* TELÉFONO */
+
+  if (phone) {
+
+    const normalizedPhone =
+      normalizeMetaPhone(
+        phone
+      );
+
+    if (normalizedPhone) {
+
+      userData.ph = [
+        sha256(
+          normalizedPhone
+        )
+      ];
+
+    }
+
+  }
+
+  /* NOMBRE */
+
+  if (firstName) {
+
+    userData.fn = [
+      sha256(
+        normalizeMetaText(
+          firstName
+        )
+      )
+    ];
+
+  }
+
+  /* APELLIDO */
+
+  if (lastName) {
+
+    userData.ln = [
+      sha256(
+        normalizeMetaText(
+          lastName
+        )
+      )
+    ];
+
+  }
+
+  /* CIUDAD */
+
+  if (city) {
+
+    userData.ct = [
+      sha256(
+        normalizeMetaText(
+          city
+        )
+      )
+    ];
+
+  }
+
+  /* PAÍS */
+
+  userData.country = [
+    sha256("py")
+  ];
+
+  /* FBP */
+
+  if (
+    browserIdentifiers.fbp
+  ) {
+
+    userData.fbp =
+      browserIdentifiers.fbp;
+
+  }
+
+  /* FBC */
+
+  if (
+    browserIdentifiers.fbc
+  ) {
+
+    userData.fbc =
+      browserIdentifiers.fbc;
+
+  }
+
+  /* =================================================
+     PRODUCTOS
+  ================================================= */
+
+  const contents =
+    selectedVariants.map(
+      item => ({
+
+        id:
+          item.variant.id,
+
+        quantity:
+          1,
+
+        item_price:
+          packageData.price /
+          quantity
+
+      })
+    );
+
+  /* =================================================
+     EVENTO PURCHASE
+  ================================================= */
+
+  const event = {
+
+    event_name:
+      "Purchase",
+
+    event_time:
+      Math.floor(
+        Date.now() / 1000
+      ),
+
+    event_id:
+      eventId,
+
+    event_source_url:
+      eventSourceUrl,
+
+    action_source:
+      "website",
+
+    user_data:
+      userData,
+
+    custom_data: {
+
+      currency:
+        CURRENCY,
+
+      value:
+        Number(
+          packageData.price
+        ),
+
+      content_type:
+        "product",
+
+      content_ids:
+        selectedVariants.map(
+          item =>
+            item.variant.id
+        ),
+
+      contents,
+
+      content_name:
+        PRODUCT_NAME,
+
+      num_items:
+        quantity,
+
+      order_id:
+        String(
+          order.name ||
+          order.id
+        )
+
+    }
+
+  };
+
+  /* =================================================
+     PAYLOAD META
+  ================================================= */
+
+  const payload = {
+
+    data: [
+      event
+    ]
+
+  };
+
+  if (
+    META_TEST_EVENT_CODE
+  ) {
+
+    payload.test_event_code =
+      META_TEST_EVENT_CODE;
+
+  }
+
+  /* =================================================
+     URL META
+  ================================================= */
+
+  const url =
+    `https://graph.facebook.com/${META_API_VERSION}/${META_PIXEL_ID}/events` +
+    `?access_token=${encodeURIComponent(
+      META_ACCESS_TOKEN
+    )}`;
+
+  console.log(
+    "================================="
+  );
+
+  console.log(
+    "ENVIANDO PURCHASE A META:"
+  );
+
+  console.log(
+    JSON.stringify(
+      {
+
+        event_name:
+          event.event_name,
+
+        event_id:
+          event.event_id,
+
+        value:
+          event.custom_data.value,
+
+        currency:
+          event.custom_data.currency,
+
+        test_event:
+          Boolean(
+            META_TEST_EVENT_CODE
+          )
+
+      },
+      null,
+      2
+    )
+  );
+
+  /* =================================================
+     ENVIAR A META
+  ================================================= */
+
+  const response =
+    await fetch(
+      url,
+      {
+
+        method:
+          "POST",
+
+        headers: {
+
+          "Content-Type":
+            "application/json",
+
+          "Accept":
+            "application/json"
+
+        },
+
+        body:
+          JSON.stringify(
+            payload
+          )
+
+      }
+    );
+
+  const text =
+    await response.text();
+
+  let data;
+
+  try {
+
+    data =
+      JSON.parse(
+        text
+      );
+
+  } catch {
+
+    data = {
+      raw: text
+    };
+
+  }
+
+  if (!response.ok) {
+
+    throw new Error(
+      `Meta CAPI HTTP ${response.status}: ${JSON.stringify(data)}`
+    );
+
+  }
+
+  console.log(
+    "META PURCHASE ENVIADO CORRECTAMENTE:"
+  );
+
+  console.log(
+    JSON.stringify(
+      data,
+      null,
+      2
+    )
+  );
+
+  console.log(
+    "================================="
+  );
+
+  return {
+
+    ok: true,
+
+    data
+
+  };
+
 }
 
 
@@ -909,7 +1348,6 @@ app.post(
           req.body
         );
 
-
       if (validation) {
 
         return res
@@ -936,13 +1374,11 @@ app.post(
           80
         );
 
-
       const lastName =
         clean(
           req.body.lastName,
           80
         );
-
 
       const email =
         clean(
@@ -950,13 +1386,11 @@ app.post(
           160
         );
 
-
       const phone =
         clean(
           req.body.phone,
           40
         );
-
 
       const address =
         clean(
@@ -964,13 +1398,11 @@ app.post(
           180
         );
 
-
       const city =
         clean(
           req.body.city,
           80
         );
-
 
       const notes =
         clean(
@@ -988,14 +1420,12 @@ app.post(
           req.body.packageId
         );
 
-
       const packageData =
         PACKAGES.find(
           packageItem =>
             packageItem.id ===
             packageId
         );
-
 
       if (!packageData) {
 
@@ -1022,10 +1452,8 @@ app.post(
           normalizeColor
         );
 
-
       const quantity =
         colors.length;
-
 
       console.log(
         "COLORES SELECCIONADOS:",
@@ -1060,7 +1488,6 @@ app.post(
                 color
               );
 
-
             if (!variant) {
 
               throw new Error(
@@ -1069,10 +1496,12 @@ app.post(
 
             }
 
-
             return {
+
               color,
+
               variant
+
             };
 
           }
@@ -1132,7 +1561,8 @@ app.post(
             variantId:
               item.variant.id,
 
-            quantity: 1,
+            quantity:
+              1,
 
             priceSet: {
 
@@ -1153,19 +1583,23 @@ app.post(
             properties: [
 
               {
+
                 name:
                   "Color seleccionado",
 
                 value:
                   item.color
+
               },
 
               {
+
                 name:
                   "Paquete",
 
                 value:
                   packageData.label
+
               }
 
             ]
@@ -1200,17 +1634,13 @@ app.post(
 
         lineItems,
 
-
         /*
           IMPORTANTE:
 
           Si el cliente NO pone Gmail,
           NO enviamos customer.toUpsert.
 
-          Esto evita el error:
-
-          "OrderCreateOrderInput requires
-           at least one of id, email..."
+          Esto evita errores de Shopify.
         */
 
         ...(email
@@ -1239,7 +1669,6 @@ app.post(
             }
           : {}),
 
-
         /*
           El email también solamente
           se envía cuando existe.
@@ -1251,13 +1680,10 @@ app.post(
             }
           : {}),
 
-
         phone,
-
 
         financialStatus:
           "PENDING",
-
 
         shippingAddress: {
 
@@ -1277,7 +1703,6 @@ app.post(
 
         },
 
-
         billingAddress: {
 
           firstName,
@@ -1295,7 +1720,6 @@ app.post(
           phone
 
         },
-
 
         note: [
 
@@ -1455,8 +1879,6 @@ app.post(
           });
 
       }
-
-
       /* ===============================================
          ÉXITO
       =============================================== */
@@ -1474,6 +1896,78 @@ app.post(
         "================================="
       );
 
+
+      /* ===============================================
+         META CONVERSIONS API - PURCHASE
+      =============================================== */
+
+      /*
+        Shopify ya confirmó que el pedido existe.
+
+        Si Meta falla, NO detenemos ni invalidamos
+        el pedido de Shopify.
+      */
+
+      try {
+
+        const metaResult =
+          await sendMetaPurchaseEvent({
+
+            req,
+
+            order:
+              result.order,
+
+            packageData,
+
+            quantity,
+
+            selectedVariants,
+
+            email,
+
+            firstName,
+
+            lastName,
+
+            phone,
+
+            city
+
+          });
+
+
+        console.log(
+          "Resultado Meta:",
+          JSON.stringify(
+            metaResult,
+            null,
+            2
+          )
+        );
+
+      } catch (metaError) {
+
+        console.error(
+          "ERROR AL ENVIAR PURCHASE A META:",
+          metaError
+        );
+
+        /*
+          IMPORTANTE:
+
+          El pedido de Shopify ya fue creado.
+
+          Un fallo de Meta NO debe mostrar error
+          al cliente ni cancelar el pedido.
+        */
+
+      }
+
+
+      /* ===============================================
+         RESPUESTA FINAL
+      =============================================== */
 
       return res
         .status(200)
@@ -1520,6 +2014,7 @@ app.post(
     }
 
   }
+
 );
 
 
@@ -1620,6 +2115,35 @@ app.listen(
     console.log(
       "Colores:",
       COLORS.join(", ")
+    );
+
+
+    console.log(
+      "Meta Pixel:",
+      META_PIXEL_ID ||
+        "NO CONFIGURADO"
+    );
+
+
+    console.log(
+      "Meta Access Token:",
+      META_ACCESS_TOKEN
+        ? "CONFIGURADO"
+        : "NO CONFIGURADO"
+    );
+
+
+    console.log(
+      "Meta API:",
+      META_API_VERSION
+    );
+
+
+    console.log(
+      "Meta Test Event:",
+      META_TEST_EVENT_CODE
+        ? "ACTIVO"
+        : "NO ACTIVO"
     );
 
 
