@@ -693,6 +693,7 @@ function findVariantByColor(
             .toLowerCase() ===
           wanted
         );
+
       }
     );
 
@@ -731,39 +732,75 @@ function findVariantByColor(
 
   return variant || null;
 }
+
 /* =====================================================
    META - UTILIDADES CONVERSIONS API
 ===================================================== */
 
 function sha256(value) {
+
   return crypto
     .createHash("sha256")
-    .update(String(value), "utf8")
+    .update(
+      String(value),
+      "utf8"
+    )
     .digest("hex");
+
 }
 
-function normalizeMetaText(value) {
-  return String(value ?? "")
+function normalizeMetaText(
+  value
+) {
+
+  return String(
+    value ?? ""
+  )
     .trim()
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ");
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
+    .replace(
+      /\s+/g,
+      " "
+    );
+
 }
 
-function normalizeMetaPhone(value) {
-  return String(value ?? "")
-    .replace(/\D/g, "");
+function normalizeMetaPhone(
+  value
+) {
+
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /\D/g,
+      ""
+    );
+
 }
 
-function getRequestIp(req) {
+function getRequestIp(
+  req
+) {
+
   const forwarded =
-    req.headers["x-forwarded-for"];
+    req.headers[
+      "x-forwarded-for"
+    ];
 
   if (forwarded) {
-    return String(forwarded)
+
+    return String(
+      forwarded
+    )
       .split(",")[0]
       .trim();
+
   }
 
   return (
@@ -771,9 +808,13 @@ function getRequestIp(req) {
     req.socket?.remoteAddress ||
     ""
   );
+
 }
 
-function getMetaBrowserIdentifiers(req) {
+function getMetaBrowserIdentifiers(
+  req
+) {
+
   const body =
     req.body || {};
 
@@ -794,9 +835,13 @@ function getMetaBrowserIdentifiers(req) {
     );
 
   return {
-    fbp: fbp || null,
-    fbc: fbc || null
+    fbp:
+      fbp || null,
+
+    fbc:
+      fbc || null
   };
+
 }
 
 /* =====================================================
@@ -817,6 +862,7 @@ async function sendMetaPurchaseEvent({
 }) {
 
   if (!META_ACCESS_TOKEN) {
+
     console.warn(
       "META_ACCESS_TOKEN no está configurado. El pedido de Shopify se creó, pero no se envió Purchase a Meta."
     );
@@ -827,9 +873,11 @@ async function sendMetaPurchaseEvent({
       reason:
         "META_ACCESS_TOKEN_MISSING"
     };
+
   }
 
   if (!META_PIXEL_ID) {
+
     console.warn(
       "META_PIXEL_ID no está configurado. El pedido de Shopify se creó, pero no se envió Purchase a Meta."
     );
@@ -840,6 +888,7 @@ async function sendMetaPurchaseEvent({
       reason:
         "META_PIXEL_ID_MISSING"
     };
+
   }
 
   /*
@@ -878,77 +927,101 @@ async function sendMetaPurchaseEvent({
     `https://${SHOP}`;
 
   const userData = {
+
     client_ip_address:
       getRequestIp(req),
 
     client_user_agent:
       req.headers["user-agent"] ||
       ""
+
   };
 
   /* EMAIL */
 
   if (email) {
+
     userData.em = [
+
       sha256(
         normalizeMetaText(
           email
         )
       )
+
     ];
+
   }
 
   /* TELÉFONO */
 
   if (phone) {
+
     const normalizedPhone =
       normalizeMetaPhone(
         phone
       );
 
     if (normalizedPhone) {
+
       userData.ph = [
+
         sha256(
           normalizedPhone
         )
+
       ];
+
     }
+
   }
 
   /* NOMBRE */
 
   if (firstName) {
+
     userData.fn = [
+
       sha256(
         normalizeMetaText(
           firstName
         )
       )
+
     ];
+
   }
 
   /* APELLIDO */
 
   if (lastName) {
+
     userData.ln = [
+
       sha256(
         normalizeMetaText(
           lastName
         )
       )
+
     ];
+
   }
 
   /* CIUDAD */
 
   if (city) {
+
     userData.ct = [
+
       sha256(
         normalizeMetaText(
           city
         )
       )
+
     ];
+
   }
 
   /* PAÍS */
@@ -962,8 +1035,10 @@ async function sendMetaPurchaseEvent({
   if (
     browserIdentifiers.fbp
   ) {
+
     userData.fbp =
       browserIdentifiers.fbp;
+
   }
 
   /* FBC */
@@ -971,8 +1046,10 @@ async function sendMetaPurchaseEvent({
   if (
     browserIdentifiers.fbc
   ) {
+
     userData.fbc =
       browserIdentifiers.fbc;
+
   }
 
   /* =================================================
@@ -982,6 +1059,7 @@ async function sendMetaPurchaseEvent({
   const contents =
     selectedVariants.map(
       item => ({
+
         id:
           item.variant.id,
 
@@ -991,6 +1069,7 @@ async function sendMetaPurchaseEvent({
         item_price:
           packageData.price /
           quantity
+
       })
     );
 
@@ -999,6 +1078,7 @@ async function sendMetaPurchaseEvent({
   ================================================= */
 
   const event = {
+
     event_name:
       "Purchase",
 
@@ -1020,6 +1100,7 @@ async function sendMetaPurchaseEvent({
       userData,
 
     custom_data: {
+
       currency:
         CURRENCY,
 
@@ -1050,7 +1131,9 @@ async function sendMetaPurchaseEvent({
           order.name ||
           order.id
         )
+
     }
+
   };
 
   /* =================================================
@@ -1058,16 +1141,20 @@ async function sendMetaPurchaseEvent({
   ================================================= */
 
   const payload = {
+
     data: [
       event
     ]
+
   };
 
   if (
     META_TEST_EVENT_CODE
   ) {
+
     payload.test_event_code =
       META_TEST_EVENT_CODE;
+
   }
 
   /* =================================================
@@ -1116,6 +1203,31 @@ async function sendMetaPurchaseEvent({
     )
   );
 
+  /*
+    DIAGNÓSTICO NUEVO:
+    MOSTRAR PAYLOAD COMPLETO
+  */
+
+  console.log(
+    "================================="
+  );
+
+  console.log(
+    "META PAYLOAD COMPLETO:"
+  );
+
+  console.log(
+    JSON.stringify(
+      payload,
+      null,
+      2
+    )
+  );
+
+  console.log(
+    "================================="
+  );
+
   /* =================================================
      ENVIAR A META
   ================================================= */
@@ -1124,21 +1236,25 @@ async function sendMetaPurchaseEvent({
     await fetch(
       url,
       {
+
         method:
           "POST",
 
         headers: {
+
           "Content-Type":
             "application/json",
 
           "Accept":
             "application/json"
+
         },
 
         body:
           JSON.stringify(
             payload
           )
+
       }
     );
 
@@ -1148,20 +1264,56 @@ async function sendMetaPurchaseEvent({
   let data;
 
   try {
+
     data =
       JSON.parse(
         text
       );
+
   } catch {
+
     data = {
       raw: text
     };
+
   }
 
+  /*
+    DIAGNÓSTICO NUEVO:
+    RESPUESTA COMPLETA DE META
+  */
+
+  console.log(
+    "================================="
+  );
+
+  console.log(
+    "META HTTP STATUS:",
+    response.status
+  );
+
+  console.log(
+    "META RESPONSE COMPLETA:"
+  );
+
+  console.log(
+    JSON.stringify(
+      data,
+      null,
+      2
+    )
+  );
+
+  console.log(
+    "================================="
+  );
+
   if (!response.ok) {
+
     throw new Error(
       `Meta CAPI HTTP ${response.status}: ${JSON.stringify(data)}`
     );
+
   }
 
   console.log(
@@ -1184,10 +1336,10 @@ async function sendMetaPurchaseEvent({
     ok: true,
     data
   };
-}
 
+}
 /* =====================================================
-   CREAR PEDIDO
+   CREAR PEDIDO EN SHOPIFY
 ===================================================== */
 
 const ORDER_CREATE = `
@@ -1240,6 +1392,7 @@ mutation CreateOrder(
 
 `;
 
+
 /* =====================================================
    API PEDIDOS
 ===================================================== */
@@ -1269,6 +1422,7 @@ app.post(
         )
       );
 
+
       /* ===============================================
          CREDENCIALES
       =============================================== */
@@ -1282,13 +1436,16 @@ app.post(
         return res
           .status(500)
           .json({
+
             ok: false,
 
             message:
               "Shopify todavía no está configurado correctamente en Render."
+
           });
 
       }
+
 
       /* ===============================================
          VALIDACIÓN
@@ -1304,13 +1461,16 @@ app.post(
         return res
           .status(400)
           .json({
+
             ok: false,
 
             message:
               validation
+
           });
 
       }
+
 
       /* ===============================================
          DATOS DEL CLIENTE
@@ -1358,6 +1518,7 @@ app.post(
           500
         );
 
+
       /* ===============================================
          PAQUETE
       =============================================== */
@@ -1379,13 +1540,16 @@ app.post(
         return res
           .status(400)
           .json({
+
             ok: false,
 
             message:
               "El paquete seleccionado no existe."
+
           });
 
       }
+
 
       /* ===============================================
          COLORES
@@ -1404,6 +1568,7 @@ app.post(
         colors
       );
 
+
       /* ===============================================
          BUSCAR VARIANTES SHOPIFY
       =============================================== */
@@ -1412,6 +1577,7 @@ app.post(
         variants
       } =
         await findShopifyProductAndVariants();
+
 
       /* ===============================================
          ENCONTRAR VARIANTE POR COLOR
@@ -1446,6 +1612,7 @@ app.post(
           }
         );
 
+
       /* ===============================================
          MOSTRAR VARIANTES
       =============================================== */
@@ -1478,6 +1645,7 @@ app.post(
         }
       );
 
+
       /* ===============================================
          PRECIO
       =============================================== */
@@ -1486,6 +1654,7 @@ app.post(
         packageData.price /
         quantity;
 
+
       /* ===============================================
          LINE ITEMS
       =============================================== */
@@ -1493,6 +1662,7 @@ app.post(
       const lineItems =
         selectedVariants.map(
           item => ({
+
             variantId:
               item.variant.id,
 
@@ -1518,25 +1688,30 @@ app.post(
             properties: [
 
               {
+
                 name:
                   "Color seleccionado",
 
                 value:
                   item.color
+
               },
 
               {
+
                 name:
                   "Paquete",
 
                 value:
                   packageData.label
+
               }
 
             ]
 
           })
         );
+
 
       /* ===============================================
          RESUMEN DE COLORES
@@ -1554,6 +1729,7 @@ app.post(
           .join(
             " | "
           );
+
 
       /* ===============================================
          PEDIDO SHOPIFY
@@ -1667,6 +1843,7 @@ app.post(
 
       };
 
+
       /* ===============================================
          LOG
       =============================================== */
@@ -1705,6 +1882,7 @@ app.post(
         )
       );
 
+
       /* ===============================================
          CREAR PEDIDO EN SHOPIFY
       =============================================== */
@@ -1720,18 +1898,22 @@ app.post(
       const result =
         data?.data?.orderCreate;
 
+
       if (!result) {
 
         return res
           .status(502)
           .json({
+
             ok: false,
 
             message:
               "Shopify no devolvió información del pedido."
+
           });
 
       }
+
 
       /* ===============================================
          ERRORES DE SHOPIFY
@@ -1760,12 +1942,15 @@ app.post(
         return res
           .status(400)
           .json({
+
             ok: false,
 
             message
+
           });
 
       }
+
 
       /* ===============================================
          VERIFICAR PEDIDO
@@ -1778,13 +1963,17 @@ app.post(
         return res
           .status(502)
           .json({
+
             ok: false,
 
             message:
               "Shopify no creó el pedido."
+
           });
 
       }
+
+
       /* ===============================================
          PEDIDO CREADO CORRECTAMENTE
       =============================================== */
@@ -1941,8 +2130,6 @@ app.post(
 
   }
 );
-
-
 /* =====================================================
    RUTA DE SALUD
 ===================================================== */
@@ -1966,7 +2153,6 @@ app.get(
         ),
 
       meta:
-
         Boolean(
           META_PIXEL_ID &&
           META_ACCESS_TOKEN
